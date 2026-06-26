@@ -4,8 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,7 +21,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AranguriAppsCodeChallengeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { innerPadding ->
                     CharactersScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
@@ -33,6 +35,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GreetingPreview() {
     AranguriAppsCodeChallengeTheme {
-        CharactersScreen(modifier = Modifier.fillMaxSize())
+        CharactersScreen(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
     }
 }

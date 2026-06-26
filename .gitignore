@@ -36,3 +36,9 @@ google-services.json
 
 # Extras
 extras/
+
+# Skills de IA
+skills/
+
+# Vs code
+settings.json
