@@ -55,6 +55,8 @@ data class AppCategoryColors(
 // Provisiones locales para CompositionLocal
 val LocalSpacing = staticCompositionLocalOf { AppSpacing() }
 val LocalCategoryColors = staticCompositionLocalOf { AppCategoryColors() }
+val LocalAppColorScheme = staticCompositionLocalOf { LightColorScheme }
+val LocalAppShapes = staticCompositionLocalOf { AppShapes }
 
 // ==========================================
 // Extensiones en MaterialTheme
@@ -118,7 +120,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 // Esquema de Colores Claro según la especificación exacta de design.md
-private val LightColorScheme = lightColorScheme(
+val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryContainer,
@@ -168,7 +170,9 @@ fun AranguriAppsCodeChallengeTheme(
 
     CompositionLocalProvider(
         LocalSpacing provides AppSpacing(),
-        LocalCategoryColors provides AppCategoryColors()
+        LocalCategoryColors provides AppCategoryColors(),
+        LocalAppColorScheme provides colorScheme,
+        LocalAppShapes provides AppShapes
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -177,4 +181,26 @@ fun AranguriAppsCodeChallengeTheme(
             content = content
         )
     }
+}
+
+// ==========================================
+// Acceso Estático Global (Recomendado para Styles API)
+// ==========================================
+object AppTheme {
+    val styles: AppStyles = AppStyles
+    
+    val colors: androidx.compose.material3.ColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme
+        
+    val spacing: AppSpacing
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalSpacing.current
+        
+    val categoryColors: AppCategoryColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalCategoryColors.current
 }

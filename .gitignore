@@ -39,6 +39,7 @@ extras/
 
 # Skills de IA
 skills/
+agents.md
 
 # Vs code
 settings.json

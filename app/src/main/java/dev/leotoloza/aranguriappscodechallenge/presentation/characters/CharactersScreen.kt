@@ -1,10 +1,45 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
+/**
+ * Pantalla que muestra el listado adaptativo de personajes de Disney.
+ *
+ * @param modifier Modificador para aplicar a la pantalla.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationStyleApi::class)
 @Composable
-fun CharactersScreen(modifier: Modifier = Modifier){
-    Text(text = "Characters Screen", modifier = modifier)
+fun CharactersScreen(modifier: Modifier = Modifier) {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Personajes") },
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(340.dp),
+            contentPadding = innerPadding,
+            modifier = Modifier.fillMaxSize().padding(horizontal = AppTheme.spacing.marginPage),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
+        ) {
+            items(10) { index ->
+                CharacterCard(name = "Character $index")
+            }
+        }
+    }
 }

@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Contexto y Reglas generales del Proyecto "DisneyApp"
 
 ## Contexto del Proyecto
@@ -38,3 +42,5 @@
 
 9. **Librerías y plugins**:
    -**Nuevas librerías**: Para agregar una nueva dependencia tenés que pedir permiso, no agregues nuevas librerías sin previo aviso. Usar siempre "Gradle's Version Catalogs feature" definiendo las versiones en "libs.versions.toml".
+
+10. **Reutilización de Componentes de UI**: Siempre que sea viable y posible, diseñar y extraer componentes de Compose reutilizables a un paquete común (ej. `presentation/components`) para evitar la repetición de código y mantener la consistencia visual en todas las pantallas.
