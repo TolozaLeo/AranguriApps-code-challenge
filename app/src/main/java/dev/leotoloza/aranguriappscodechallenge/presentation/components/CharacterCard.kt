@@ -54,12 +54,9 @@ fun CharacterCard(
 
     // Animación de escala elástica (bouncy spring) para el efecto "pop" al interactuar
     val scale by animateFloatAsState(
-        targetValue = if (isFavorite) 1.3f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioHighBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "FavoriteButtonScale"
+        targetValue = if (isFavorite) 1.3f else 1.0f, animationSpec = spring(
+            dampingRatio = Spring.DampingRatioHighBouncy, stiffness = Spring.StiffnessMedium
+        ), label = "FavoriteButtonScale"
     )
 
     Row(
@@ -87,26 +84,24 @@ fun CharacterCard(
             Spacer(modifier = Modifier.height(AppTheme.spacing.stackSm))
             // TODO: Reemplazar por etiquetas de categoría reales de Disney
             Text(
-                text = "Category",
-                style = MaterialTheme.typography.labelSmall
+                text = "Category", style = MaterialTheme.typography.labelSmall
             )
         }
-        
+
         // Botón de favoritos responsivo e interactivo usando símbolos Unicode de corazón
-        IconButton(
-            onClick = {
-                isFavorite = !isFavorite
-                onFavoriteClick?.invoke(isFavorite)
-            },
-            modifier = Modifier.graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-        ) {
+        IconButton(onClick = {
+            isFavorite = !isFavorite
+            onFavoriteClick?.invoke(isFavorite)
+        }, modifier = Modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }) {
             Text(
                 text = if (isFavorite) "\u2665" else "\u2661",
                 style = MaterialTheme.typography.headlineMedium,
-                color = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(alpha = 0.6f)
+                color = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
+                    alpha = 0.6f
+                )
             )
         }
     }

@@ -29,7 +29,7 @@ val StyleScope.spacing: AppSpacing
 object AppStyles {
     val characterCardStyle = Style {
         shape(appShapes.medium)
-        background(colors.surfaceContainerHighest ?: colors.surfaceVariant) // surfaceContainerHighest might not exist, use surfaceVariant
+        background(colors.surfaceVariant)
     }
 
     val tagBaseStyle = Style {
