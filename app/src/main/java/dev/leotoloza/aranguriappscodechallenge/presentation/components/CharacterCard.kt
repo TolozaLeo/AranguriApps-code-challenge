@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +15,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.foundation.style.styleable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
@@ -40,6 +47,7 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
  * @param modifier Modificador para aplicar a la tarjeta.
  * @param initialIsFavorite Estado inicial de favoritos del personaje.
  * @param onFavoriteClick Callback que se ejecuta al presionar el botón de favoritos. Recibe el nuevo estado.
+ * @param onClick Callback que se ejecuta al presionar o hacer clic en la tarjeta.
  */
 @OptIn(ExperimentalFoundationStyleApi::class)
 @Composable
@@ -47,7 +55,8 @@ fun CharacterCard(
     name: String,
     modifier: Modifier = Modifier,
     initialIsFavorite: Boolean = false,
-    onFavoriteClick: ((Boolean) -> Unit)? = null
+    onFavoriteClick: ((Boolean) -> Unit)? = null,
+    onClick: () -> Unit = {}
 ) {
     var isFavorite by remember { mutableStateOf(initialIsFavorite) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -63,7 +72,13 @@ fun CharacterCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(12.dp),
+                clip = false
+            )
             .styleable(null, AppTheme.styles.characterCardStyle)
+            .clickable { onClick() }
             .padding(AppTheme.spacing.stackMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -88,7 +103,7 @@ fun CharacterCard(
             )
         }
 
-        // Botón de favoritos responsivo e interactivo usando símbolos Unicode de corazón
+        // Botón de favoritos responsivo e interactivo usando iconos de la librería Material
         IconButton(onClick = {
             isFavorite = !isFavorite
             onFavoriteClick?.invoke(isFavorite)
@@ -96,12 +111,13 @@ fun CharacterCard(
             scaleX = scale
             scaleY = scale
         }) {
-            Text(
-                text = if (isFavorite) "\u2665" else "\u2661",
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                tint = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
                     alpha = 0.6f
-                )
+                ),
+                modifier = Modifier.size(28.dp)
             )
         }
     }
