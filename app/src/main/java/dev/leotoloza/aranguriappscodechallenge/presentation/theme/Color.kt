@@ -24,7 +24,7 @@ val OnError = Color(0xFFFFFFFF)
 val ErrorContainer = Color(0xFFFFDAD6)
 val OnErrorContainer = Color(0xFF93000A)
 
-val Background = Color(0xFFE5E2E1)
+val Background = Color(0xFFEFEDEC)
 val OnBackground = Color(0xFF1C1B1B)
 
 val Surface = Color(0xFFE5E2E1)

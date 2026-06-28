@@ -9,36 +9,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
 /**
  * Pantalla que muestra el listado adaptativo de personajes de Disney.
  *
+ * @param onCharacterClick Callback que se ejecuta al seleccionar un personaje, recibiendo su nombre.
  * @param modifier Modificador para aplicar a la pantalla.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationStyleApi::class)
 @Composable
-fun CharactersScreen(modifier: Modifier = Modifier) {
+fun CharactersScreen(
+    onCharacterClick: (String) -> Unit = {}, modifier: Modifier = Modifier,
+) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    
+
     Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Personajes") },
-                scrollBehavior = scrollBehavior
+        modifier = modifier, topBar = {
+            DisneyTopAppBar(
+                titleText = "Personajes", scrollBehavior = scrollBehavior
             )
-        }
-    ) { innerPadding ->
+        }) { innerPadding ->
         LazyVerticalGrid(
             columns = GridCells.Adaptive(340.dp),
             contentPadding = innerPadding,
-            modifier = Modifier.fillMaxSize().padding(horizontal = AppTheme.spacing.marginPage),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = AppTheme.spacing.marginPage),
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
         ) {
             items(10) { index ->
-                CharacterCard(name = "Character $index")
+                val characterName = "Character $index"
+                CharacterCard(
+                    name = characterName, onClick = { onCharacterClick(characterName) })
             }
         }
     }
