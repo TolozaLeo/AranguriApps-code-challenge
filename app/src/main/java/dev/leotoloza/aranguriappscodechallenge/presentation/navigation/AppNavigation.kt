@@ -1,5 +1,6 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,7 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.leotoloza.aranguriappscodechallenge.presentation.characters.CharactersScreen
 import dev.leotoloza.aranguriappscodechallenge.presentation.details.DetailsScreen
 import dev.leotoloza.aranguriappscodechallenge.presentation.favorites.FavoritesScreen
@@ -60,6 +63,11 @@ fun AppNavigation(
 
     val currentCharacterName = selectedCharacterName
     if (currentCharacterName != null) {
+        // Intercepta el gesto de retroceso del sistema en la pantalla de detalle
+        BackHandler(enabled = true) {
+            // Regresa a la pantalla origen (currentDestination) al quitar el personaje seleccionado
+            selectedCharacterName = null
+        }
         DetailsScreen(
             characterName = currentCharacterName,
             onBack = { selectedCharacterName = null },
@@ -68,6 +76,18 @@ fun AppNavigation(
                 .background(MaterialTheme.colorScheme.background)
         )
     } else {
+        // Configura el manejador de retroceso según la pantalla activa
+        if (currentDestination == BottomNavigation.FAVORITES) {
+            BackHandler(enabled = true) {
+                // Si está en Favoritos, al presionar atrás regresa a la pantalla de Personajes
+                currentDestination = BottomNavigation.CHARACTERS
+            }
+        } else {
+            BackHandler(enabled = true) {
+                // Si está en Personajes (la raíz), el retroceso no tiene acción para evitar que se cierre la app
+            }
+        }
+
         NavigationSuiteScaffold(
             modifier = modifier,
             containerColor = MaterialTheme.colorScheme.background,
@@ -87,7 +107,7 @@ fun AppNavigation(
                             modifier = Modifier
                                 .width(100.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(horizontal = 4.dp, vertical = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -97,7 +117,9 @@ fun AppNavigation(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = destination.title,
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

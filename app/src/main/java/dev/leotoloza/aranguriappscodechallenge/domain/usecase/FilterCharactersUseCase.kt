@@ -19,6 +19,6 @@ class FilterCharactersUseCase(private val repository: CharacterRepository) {
      * @param filter Criterio de filtrado. Ver subclases de [CharacterFilter].
      * @return [Result] con la lista de [Character] coincidentes, o el error en caso de fallo.
      */
-    suspend operator fun invoke(filter: CharacterFilter): Result<List<Character>> =
-        repository.filterCharacters(filter)
+    suspend operator fun invoke(filter: CharacterFilter, page: Int = 1): Result<List<Character>> =
+        repository.filterCharacters(filter, page)
 }
