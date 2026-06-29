@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.characters.CharactersScreen
 import dev.leotoloza.aranguriappscodechallenge.presentation.details.DetailsScreen
@@ -42,9 +43,9 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.favorites.FavoritesS
 fun AppNavigation(
     modifier: Modifier = Modifier
 ) {
-    // Estado del destino seleccionado actualmente
     var currentDestination by remember { mutableStateOf(BottomNavigation.CHARACTERS) }
     var selectedCharacter by remember { mutableStateOf<Character?>(null) }
+    val charactersGridState = rememberLazyGridState()
 
     val customItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -132,6 +133,7 @@ fun AppNavigation(
             when (currentDestination) {
                 BottomNavigation.CHARACTERS -> {
                     CharactersScreen(
+                        gridState = charactersGridState,
                         onCharacterClick = { character -> selectedCharacter = character },
                         modifier = Modifier
                             .fillMaxSize()

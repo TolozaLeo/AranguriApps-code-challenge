@@ -3,6 +3,7 @@ package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
 import io.mockk.coEvery
@@ -38,6 +39,7 @@ class CharactersViewModelTest {
     private val getCharactersUseCase: GetCharactersUseCase = mockk()
     private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase = mockk()
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase = mockk()
+    private val observeFavoriteCharactersUseCase: ObserveFavoriteCharactersUseCase = mockk()
     private val testDispatcher = StandardTestDispatcher()
 
     private companion object {
@@ -83,6 +85,7 @@ class CharactersViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         coEvery { observeFavoriteIdsUseCase() } returns flowOf(emptySet())
+        coEvery { observeFavoriteCharactersUseCase() } returns flowOf(emptyList())
     }
 
     @After
@@ -104,7 +107,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
 
         // When (Cuando se crea el ViewModel)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
 
         // Then (Entonces el estado inicial es Loading)
         assertEquals(CharactersUiState.Loading, viewModel.uiState.value)
@@ -141,7 +144,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(SECOND_PAGE) } returns Result.success(secondPageResult)
 
         // When (Cuando se carga la primera página)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // When (Cuando se solicita la segunda página)
@@ -169,7 +172,7 @@ class CharactersViewModelTest {
         )
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(lastPageResult)
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // When (Cuando se intenta cargar la siguiente página)
@@ -192,7 +195,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(UnknownHostException())
 
         // When (Cuando se crea el ViewModel y se completa la coroutine)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // Then (Entonces el estado es Error con mensaje de sin conexión)
@@ -214,7 +217,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
 
         // When (Cuando se crea el ViewModel y se completa la coroutine)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // Then (Entonces el estado es Error con mensaje genérico)
@@ -235,7 +238,7 @@ class CharactersViewModelTest {
         // Given (Dado que la primera carga falla)
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // Verificar que estamos en estado de error
@@ -271,7 +274,7 @@ class CharactersViewModelTest {
         )
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(firstPageResult)
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // Given (Dado que la segunda página falla)
@@ -286,6 +289,110 @@ class CharactersViewModelTest {
         assertEquals(1, state.characters.size)
         assertEquals(FIRST_CHARACTER_NAME, state.characters[0].name)
         assertFalse(state.isLoadingNextPage)
+        assertEquals(CharactersViewModel.ERROR_MESSAGE_GENERIC, state.pagingError)
+    }
+
+    /**
+     * Verifica que un error genérico en la carga de una página posterior
+     * establezca la propiedad pagingError con el mensaje genérico.
+     */
+    @Test
+    fun loadNextPage_genericError_sets_pagingError_with_generic_message() = runTest {
+        // Given (Dado que la primera página carga exitosamente)
+        val firstPageResult = PaginatedResult(
+            items = listOf(firstPageCharacter),
+            hasNextPage = true
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(firstPageResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // Given (Dado que la segunda página falla con error genérico)
+        coEvery { getCharactersUseCase(SECOND_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
+
+        // When (Cuando se intenta cargar la siguiente página)
+        viewModel.loadNextPage()
+        advanceUntilIdle()
+
+        // Then (Entonces el estado Success contiene el mensaje de error genérico)
+        val state = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(CharactersViewModel.ERROR_MESSAGE_GENERIC, state.pagingError)
+    }
+
+    /**
+     * Verifica que un error de red (UnknownHostException) en la carga de una página posterior
+     * establezca la propiedad pagingError con el mensaje de falta de conexión a internet.
+     */
+    @Test
+    fun loadNextPage_networkError_sets_pagingError_with_noInternet_message() = runTest {
+        // Given (Dado que la primera página carga exitosamente)
+        val firstPageResult = PaginatedResult(
+            items = listOf(firstPageCharacter),
+            hasNextPage = true
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(firstPageResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // Given (Dado que la segunda página falla por falta de conexión)
+        coEvery { getCharactersUseCase(SECOND_PAGE) } returns Result.failure(UnknownHostException())
+
+        // When (Cuando se intenta cargar la siguiente página)
+        viewModel.loadNextPage()
+        advanceUntilIdle()
+
+        // Then (Entonces el estado Success contiene el mensaje de sin conexión)
+        val state = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(CharactersViewModel.ERROR_MESSAGE_NO_INTERNET, state.pagingError)
+    }
+
+    /**
+     * Verifica que la llamada a clearPagingError() limpie el error de paginación
+     * restableciéndolo a null.
+     */
+    @Test
+    fun clearPagingError_resets_pagingError_to_null() = runTest {
+        // Given (Dado que la primera página carga exitosamente y la segunda falla)
+        val firstPageResult = PaginatedResult(
+            items = listOf(firstPageCharacter),
+            hasNextPage = true
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(firstPageResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        coEvery { getCharactersUseCase(SECOND_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
+        viewModel.loadNextPage()
+        advanceUntilIdle()
+
+        // Verificar que el error no sea nulo inicialmente
+        val stateWithError = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(CharactersViewModel.ERROR_MESSAGE_GENERIC, stateWithError.pagingError)
+
+        // When (Cuando se limpia el error de paginación)
+        viewModel.clearPagingError()
+
+        // Then (Entonces la propiedad pagingError en el estado es null)
+        val stateCleared = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(null, stateCleared.pagingError)
     }
 
     /**
@@ -303,7 +410,7 @@ class CharactersViewModelTest {
         val favoriteIdsFlow = MutableStateFlow(emptySet<Int>())
         coEvery { observeFavoriteIdsUseCase() } returns favoriteIdsFlow
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // Verificar que el estado inicial no tenga favoritos
@@ -332,7 +439,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
         coEvery { toggleFavoriteUseCase(firstPageCharacter) } returns Unit
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
         advanceUntilIdle()
 
         // When (Cuando se solicita alternar favorito)
@@ -341,5 +448,61 @@ class CharactersViewModelTest {
 
         // Then (Entonces se invoca el caso de uso correspondiente)
         coVerify { toggleFavoriteUseCase(firstPageCharacter) }
+    }
+
+    /**
+     * Verifica que si la carga inicial de la API falla pero existen favoritos locales,
+     * se muestren los favoritos locales en estado de éxito (fallback offline).
+     */
+    @Test
+    fun initialLoad_networkError_withLocalFavorites_loadsLocalFavoritesAsFallback() = runTest {
+        // Given (Dado que la llamada a la API falla y hay favoritos locales)
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(UnknownHostException())
+        coEvery { observeFavoriteCharactersUseCase() } returns flowOf(listOf(firstPageCharacter))
+
+        // When (Cuando se crea el ViewModel)
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // Then (Entonces el estado final debe ser Success con los favoritos locales)
+        val state = viewModel.uiState.value
+        assertTrue(state is CharactersUiState.Success)
+        val successState = state as CharactersUiState.Success
+        assertEquals(1, successState.characters.size)
+        assertEquals(FIRST_CHARACTER_NAME, successState.characters[0].name)
+        assertFalse(successState.hasNextPage)
+    }
+
+    /**
+     * Verifica que si la carga inicial de la API falla y NO existen favoritos locales,
+     * se muestre el estado de error normal.
+     */
+    @Test
+    fun initialLoad_networkError_withoutLocalFavorites_showsErrorState() = runTest {
+        // Given (Dado que la llamada a la API falla y no hay favoritos locales)
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(UnknownHostException())
+        coEvery { observeFavoriteCharactersUseCase() } returns flowOf(emptyList())
+
+        // When (Cuando se crea el ViewModel)
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // Then (Entonces el estado final es Error)
+        val state = viewModel.uiState.value
+        assertTrue(state is CharactersUiState.Error)
+        assertEquals(
+            CharactersViewModel.ERROR_MESSAGE_NO_INTERNET,
+            (state as CharactersUiState.Error).message
+        )
     }
 }

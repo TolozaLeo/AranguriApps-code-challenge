@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -20,6 +21,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -36,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
@@ -54,19 +60,46 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 @Composable
 fun CharactersScreen(
     modifier: Modifier = Modifier,
+    gridState: LazyGridState = rememberLazyGridState(),
     onCharacterClick: (Character) -> Unit = {},
     viewModel: CharactersViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val state = uiState
+    if (state is CharactersUiState.Success) {
+        val pagingError = state.pagingError
+        LaunchedEffect(pagingError) {
+            if (pagingError != null) {
+                val result = snackbarHostState.showSnackbar(
+                    message = pagingError,
+                    actionLabel = "Reintentar",
+                    duration = SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    viewModel.loadNextPage()
+                }
+                viewModel.clearPagingError()
+            }
+        }
+    }
 
     Scaffold(
-        modifier = modifier, topBar = {
+        modifier = modifier,
+        topBar = {
             DisneyTopAppBar(
                 titleText = "Personajes", scrollBehavior = scrollBehavior
             )
-        }) { innerPadding ->
-        when (val state = uiState) {
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                DisneySnackbar(snackbarData = data)
+            }
+        }
+    ) { innerPadding ->
+        when (state) {
             is CharactersUiState.Loading -> {
                 LoadingContent(modifier = Modifier.padding(innerPadding))
             }
@@ -82,6 +115,7 @@ fun CharactersScreen(
             is CharactersUiState.Success -> {
                 SuccessContent(
                     state = state,
+                    gridState = gridState,
                     onCharacterClick = onCharacterClick,
                     onFavoriteClick = viewModel::toggleFavorite,
                     onLoadMore = viewModel::loadNextPage,
@@ -155,12 +189,12 @@ private fun ErrorContent(
 @Composable
 private fun SuccessContent(
     state: CharactersUiState.Success,
+    gridState: LazyGridState,
     onCharacterClick: (Character) -> Unit,
     onFavoriteClick: (Character) -> Unit,
     onLoadMore: () -> Unit,
     innerPadding: PaddingValues
 ) {
-    val gridState = rememberLazyGridState()
 
     // Detección de scroll infinito: dispara la carga cuando el usuario se acerca al final
     val shouldLoadMore by remember {

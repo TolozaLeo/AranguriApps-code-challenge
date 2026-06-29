@@ -26,7 +26,8 @@ sealed interface CharactersUiState {
         val characters: List<Character>,
         val favoriteIds: Set<Int> = emptySet(),
         val isLoadingNextPage: Boolean,
-        val hasNextPage: Boolean
+        val hasNextPage: Boolean,
+        val pagingError: String? = null
     ) : CharactersUiState
 
     /**
