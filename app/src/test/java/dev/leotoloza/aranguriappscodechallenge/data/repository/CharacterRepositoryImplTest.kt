@@ -1,19 +1,23 @@
 package dev.leotoloza.aranguriappscodechallenge.data.repository
 
-import dev.leotoloza.aranguriappscodechallenge.data.network.service.DisneyApiService
+import dev.leotoloza.aranguriappscodechallenge.data.local.dao.CharacterDao
+import dev.leotoloza.aranguriappscodechallenge.data.local.entity.CharacterEntity
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharactersListResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.InfoDto
+import dev.leotoloza.aranguriappscodechallenge.data.network.service.DisneyApiService
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
@@ -25,7 +29,8 @@ import java.io.IOException
 class CharacterRepositoryImplTest {
 
     private val apiService: DisneyApiService = mockk()
-    private val repository = CharacterRepositoryImpl(apiService)
+    private val characterDao: CharacterDao = mockk()
+    private val repository = CharacterRepositoryImpl(apiService, characterDao)
 
     private companion object {
         const val TEST_ID = 1
@@ -262,26 +267,56 @@ class CharacterRepositoryImplTest {
     }
 
     /**
-     * Verifica que [CharacterRepositoryImpl.getFavoriteCharacters] retorne inicialmente los 3 personajes precargados.
+     * Verifica que [CharacterRepositoryImpl.getFavoriteCharacters] retorne los personajes del DAO.
      */
     @Test
-    fun getFavoriteCharacters_returns_prepopulated_characters() = runTest {
+    fun getFavoriteCharacters_returns_characters_from_dao() = runTest {
+        // Given
+        val entityList = listOf(
+            CharacterEntity(
+                id = TEST_ID,
+                name = TEST_NAME,
+                imageUrl = TEST_IMAGE_URL,
+                url = TEST_URL,
+                films = emptyList(),
+                shortFilms = emptyList(),
+                tvShows = emptyList(),
+                videoGames = emptyList()
+            )
+        )
+        every { characterDao.observeFavoriteCharacters() } returns flowOf(entityList)
+
         // When
         val favorites = repository.getFavoriteCharacters().first()
 
         // Then
-        assertEquals(3, favorites.size)
-        assertTrue(favorites.any { it.name == "Mickey Mouse" })
-        assertTrue(favorites.any { it.name == "Donald Duck" })
-        assertTrue(favorites.any { it.name == "Goofy" })
+        assertEquals(1, favorites.size)
+        assertEquals(TEST_ID, favorites[0].id)
+        assertEquals(TEST_NAME, favorites[0].name)
     }
 
     /**
-     * Verifica que [CharacterRepositoryImpl.toggleFavorite] remueva un personaje si ya existía en favoritos
-     * y lo agregue si no existía.
+     * Verifica que [CharacterRepositoryImpl.getFavoriteIds] retorne los identificadores desde el DAO.
      */
     @Test
-    fun toggleFavorite_adds_and_removes_character() = runTest {
+    fun getFavoriteIds_returns_ids_from_dao() = runTest {
+        // Given
+        every { characterDao.observeFavoriteIds() } returns flowOf(listOf(TEST_ID))
+
+        // When
+        val ids = repository.getFavoriteIds().first()
+
+        // Then
+        assertEquals(1, ids.size)
+        assertTrue(ids.contains(TEST_ID))
+    }
+
+    /**
+     * Verifica que [CharacterRepositoryImpl.toggleFavorite] inserte el personaje si no existía localmente.
+     */
+    @Test
+    fun toggleFavorite_characterDoesNotExist_insertsCharacter() = runTest {
+        // Given
         val sample = Character(
             id = 999,
             name = "Minnie Mouse",
@@ -292,19 +327,50 @@ class CharacterRepositoryImplTest {
             tvShows = emptyList(),
             videoGames = emptyList()
         )
+        coEvery { characterDao.getCharacterById(999) } returns null
+        coEvery { characterDao.insertFavorite(any()) } returns Unit
 
-        // 1. Agregar a favoritos
+        // When
         repository.toggleFavorite(sample)
-        var favorites = repository.getFavoriteCharacters().first()
-        var ids = repository.getFavoriteIds().first()
-        assertEquals(4, favorites.size)
-        assertTrue(ids.contains(999))
 
-        // 2. Quitar de favoritos
+        // Then
+        coVerify { characterDao.insertFavorite(match { it.id == 999 }) }
+        coVerify(exactly = 0) { characterDao.deleteFavoriteById(any()) }
+    }
+
+    /**
+     * Verifica que [CharacterRepositoryImpl.toggleFavorite] elimine el personaje si ya existía localmente.
+     */
+    @Test
+    fun toggleFavorite_characterExists_deletesCharacter() = runTest {
+        // Given
+        val sample = Character(
+            id = 999,
+            name = "Minnie Mouse",
+            imageUrl = "",
+            url = "",
+            films = emptyList(),
+            shortFilms = emptyList(),
+            tvShows = emptyList(),
+            videoGames = emptyList()
+        )
+        coEvery { characterDao.getCharacterById(999) } returns CharacterEntity(
+            id = 999,
+            name = "Minnie Mouse",
+            imageUrl = "",
+            url = "",
+            films = emptyList(),
+            shortFilms = emptyList(),
+            tvShows = emptyList(),
+            videoGames = emptyList()
+        )
+        coEvery { characterDao.deleteFavoriteById(999) } returns Unit
+
+        // When
         repository.toggleFavorite(sample)
-        favorites = repository.getFavoriteCharacters().first()
-        ids = repository.getFavoriteIds().first()
-        assertEquals(3, favorites.size)
-        assertFalse(ids.contains(999))
+
+        // Then
+        coVerify { characterDao.deleteFavoriteById(999) }
+        coVerify(exactly = 0) { characterDao.insertFavorite(any()) }
     }
 }

@@ -6,11 +6,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 import javax.inject.Inject
@@ -25,12 +27,14 @@ import javax.inject.Inject
  * @property getCharactersUseCase Caso de uso para obtener páginas de personajes.
  * @property observeFavoriteIdsUseCase Caso de uso para observar los identificadores de favoritos.
  * @property toggleFavoriteUseCase Caso de uso para alternar el estado de favorito de un personaje.
+ * @property observeFavoriteCharactersUseCase Caso de uso para obtener la lista de personajes favoritos guardados localmente.
  */
 @HiltViewModel
 class CharactersViewModel @Inject constructor(
     private val getCharactersUseCase: GetCharactersUseCase,
     private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase,
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
+    private val observeFavoriteCharactersUseCase: ObserveFavoriteCharactersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CharactersUiState>(CharactersUiState.Loading)
@@ -41,6 +45,7 @@ class CharactersViewModel @Inject constructor(
     private var currentPage = INITIAL_PAGE
     private var hasNextPage = true
     private var isLoadingPage = false
+    private var favoriteIds: Set<Int> = emptySet()
 
     init {
         loadNextPage()
@@ -53,10 +58,11 @@ class CharactersViewModel @Inject constructor(
      */
     private fun observeFavorites() {
         viewModelScope.launch {
-            observeFavoriteIdsUseCase().collect { favoriteIds ->
+            observeFavoriteIdsUseCase().collect { ids ->
+                favoriteIds = ids
                 val currentState = _uiState.value
                 if (currentState is CharactersUiState.Success) {
-                    _uiState.value = currentState.copy(favoriteIds = favoriteIds)
+                    _uiState.value = currentState.copy(favoriteIds = ids)
                 }
             }
         }
@@ -113,6 +119,17 @@ class CharactersViewModel @Inject constructor(
     }
 
     /**
+     * Limpia el mensaje de error de paginación del estado de éxito de la UI.
+     * Debe llamarse después de que el mensaje de error (Snackbar) se haya mostrado.
+     */
+    fun clearPagingError() {
+        val currentState = _uiState.value
+        if (currentState is CharactersUiState.Success) {
+            _uiState.value = currentState.copy(pagingError = null)
+        }
+    }
+
+    /**
      * Actualiza el estado a cargando según si ya hay datos previos o no.
      * Si ya hay datos, muestra el indicador discreto al final del grid.
      * Si es la primera carga, muestra el indicador centrado a pantalla completa.
@@ -136,11 +153,6 @@ class CharactersViewModel @Inject constructor(
         } else {
             emptyList()
         }
-        val favoriteIds = if (currentState is CharactersUiState.Success) {
-            currentState.favoriteIds
-        } else {
-            emptySet()
-        }
 
         hasNextPage = paginatedResult.hasNextPage
         currentPage++
@@ -155,17 +167,51 @@ class CharactersViewModel @Inject constructor(
 
     /**
      * Procesa un error diferenciando entre falta de conexión a internet
-     * y errores genéricos del servidor, mostrando mensajes apropiados al usuario.
+     * y errores genéricos del servidor. Si es la primera carga y existen
+     * datos guardados localmente, los carga como fallback offline.
      */
     private fun handleError(error: Throwable) {
         val currentState = _uiState.value
         // Si ya hay datos cargados, restaurar el estado previo sin el indicador de carga
         if (currentState is CharactersUiState.Success) {
-            _uiState.value = currentState.copy(isLoadingNextPage = false)
+            val message = if (error is UnknownHostException) {
+                ERROR_MESSAGE_NO_INTERNET
+            } else {
+                ERROR_MESSAGE_GENERIC
+            }
+            _uiState.value = currentState.copy(
+                isLoadingNextPage = false,
+                pagingError = message
+            )
             return
         }
 
-        // Primera carga fallida — mostrar pantalla de error completa
+        // Primera carga fallida — Intentamos recuperar datos locales de favoritos
+        viewModelScope.launch {
+            try {
+                val localFavorites = observeFavoriteCharactersUseCase().first()
+                if (localFavorites.isNotEmpty()) {
+                    hasNextPage = false
+                    _uiState.value = CharactersUiState.Success(
+                        characters = localFavorites,
+                        favoriteIds = localFavorites.map { it.id }.toSet(),
+                        isLoadingNextPage = false,
+                        hasNextPage = false
+                    )
+                } else {
+                    // Si no hay favoritos locales, mostrar pantalla de error completa
+                    showErrorState(error)
+                }
+            } catch (fallbackError: Exception) {
+                showErrorState(error)
+            }
+        }
+    }
+
+    /**
+     * Establece el estado de error de la pantalla según el tipo de excepción.
+     */
+    private fun showErrorState(error: Throwable) {
         val message = if (error is UnknownHostException) {
             ERROR_MESSAGE_NO_INTERNET
         } else {

@@ -22,7 +22,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -35,11 +34,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
@@ -73,14 +74,7 @@ fun FavoritesScreen(
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = AppTheme.colors.background,
-                    contentColor = AppTheme.colors.onPrimaryContainer,
-                    actionColor = AppTheme.colors.primary,
-                    actionContentColor = AppTheme.colors.primary,
-                    shape = MaterialTheme.shapes.medium
-                )
+                DisneySnackbar(snackbarData = data)
             }
         }
     ) { innerPadding ->
@@ -156,13 +150,15 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
             Text(
                 text = "Aún no tienes personajes favoritos",
                 style = MaterialTheme.typography.titleMedium,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
+                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Explora y marca corazones en la pantalla de Personajes",
                 style = MaterialTheme.typography.bodyMedium,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.4f)
+                color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
+                textAlign = TextAlign.Center
             )
         }
     }
