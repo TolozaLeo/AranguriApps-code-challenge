@@ -1,12 +1,9 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -89,35 +86,6 @@ val AppShapes = Shapes(
     large = RoundedCornerShape(24.dp)      // Search Pill Shape (24px/dp)
 )
 
-// Esquema de Colores Oscuro personalizado (Adaptado en base a Celestial Blue)
-private val DarkColorScheme = darkColorScheme(
-    primary = InversePrimary,
-    onPrimary = Color(0xFF00344B),
-    primaryContainer = Color(0xFF004C6B),
-    onPrimaryContainer = Color(0xFFC6E7FF),
-    secondary = Color(0xFF9ACDEC),
-    onSecondary = Color(0xFF0F4C66),
-    secondaryContainer = Color(0xFF2E637E),
-    onSecondaryContainer = Color(0xFFC3E8FF),
-    tertiary = Color(0xFFFFB95B),
-    onTertiary = Color(0xFF452B00),
-    tertiaryContainer = Color(0xFF643F00),
-    onTertiaryContainer = Color(0xFFFFDDB7),
-    background = Color(0xFF191C1E),
-    onBackground = Color(0xFFE2E2E5),
-    surface = Color(0xFF191C1E),
-    onSurface = Color(0xFFE2E2E5),
-    surfaceVariant = Color(0xFF41474D),
-    onSurfaceVariant = Color(0xFFC0C7CD),
-    outline = Color(0xFF8A9297),
-    outlineVariant = Color(0xFF41474D),
-    inverseSurface = Color(0xFFE2E2E5),
-    inverseOnSurface = Color(0xFF2F3033),
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF690005),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6)
-)
 
 // Esquema de Colores Claro según la especificación exacta de design.md
 val LightColorScheme = lightColorScheme(
@@ -153,7 +121,7 @@ val LightColorScheme = lightColorScheme(
 
 @Composable
 fun AranguriAppsCodeChallengeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Forzado a false para solo tener LightMode
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false, // Deshabilitado por defecto para dar prioridad al diseño Celestial Blue y pristine white
     content: @Composable () -> Unit
@@ -161,10 +129,9 @@ fun AranguriAppsCodeChallengeTheme(
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 

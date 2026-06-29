@@ -26,7 +26,7 @@ interface CharacterRepository {
      * @param filter Criterio de búsqueda (nombre, película, serie, cortometraje o videojuego).
      * @return [Result] con la lista de [Character] coincidentes.
      */
-    suspend fun filterCharacters(filter: CharacterFilter): Result<List<Character>>
+    suspend fun filterCharacters(filter: CharacterFilter, page: Int = 1): Result<List<Character>>
 
     /**
      * Obtiene el detalle completo de un personaje específico.
