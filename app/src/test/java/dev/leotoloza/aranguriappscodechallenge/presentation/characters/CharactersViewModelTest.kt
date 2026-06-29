@@ -3,10 +3,15 @@ package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -23,13 +28,16 @@ import java.net.UnknownHostException
 /**
  * Pruebas unitarias para [CharactersViewModel].
  *
- * Verifica la carga inicial, la paginación, el manejo de errores y la función de reintentar.
+ * Verifica la carga inicial, la paginación, el manejo de errores, la función de reintentar
+ * y la actualización reactiva de los favoritos.
  * Utiliza [StandardTestDispatcher] para controlar la ejecución de coroutines.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharactersViewModelTest {
 
     private val getCharactersUseCase: GetCharactersUseCase = mockk()
+    private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase = mockk()
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase = mockk()
     private val testDispatcher = StandardTestDispatcher()
 
     private companion object {
@@ -74,6 +82,7 @@ class CharactersViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        coEvery { observeFavoriteIdsUseCase() } returns flowOf(emptySet())
     }
 
     @After
@@ -95,7 +104,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
 
         // When (Cuando se crea el ViewModel)
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
 
         // Then (Entonces el estado inicial es Loading)
         assertEquals(CharactersUiState.Loading, viewModel.uiState.value)
@@ -132,7 +141,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(SECOND_PAGE) } returns Result.success(secondPageResult)
 
         // When (Cuando se carga la primera página)
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
         advanceUntilIdle()
 
         // When (Cuando se solicita la segunda página)
@@ -160,7 +169,7 @@ class CharactersViewModelTest {
         )
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(lastPageResult)
 
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
         advanceUntilIdle()
 
         // When (Cuando se intenta cargar la siguiente página)
@@ -183,7 +192,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(UnknownHostException())
 
         // When (Cuando se crea el ViewModel y se completa la coroutine)
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
         advanceUntilIdle()
 
         // Then (Entonces el estado es Error con mensaje de sin conexión)
@@ -205,7 +214,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
 
         // When (Cuando se crea el ViewModel y se completa la coroutine)
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
         advanceUntilIdle()
 
         // Then (Entonces el estado es Error con mensaje genérico)
@@ -226,7 +235,7 @@ class CharactersViewModelTest {
         // Given (Dado que la primera carga falla)
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
 
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
         advanceUntilIdle()
 
         // Verificar que estamos en estado de error
@@ -262,7 +271,7 @@ class CharactersViewModelTest {
         )
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(firstPageResult)
 
-        val viewModel = CharactersViewModel(getCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
         advanceUntilIdle()
 
         // Given (Dado que la segunda página falla)
@@ -277,5 +286,60 @@ class CharactersViewModelTest {
         assertEquals(1, state.characters.size)
         assertEquals(FIRST_CHARACTER_NAME, state.characters[0].name)
         assertFalse(state.isLoadingNextPage)
+    }
+
+    /**
+     * Verifica que al emitir nuevos IDs favoritos el estado de éxito se actualice reactivamente.
+     */
+    @Test
+    fun observeFavorites_updates_success_state_reactively() = runTest {
+        // Given (Dado que se carga la primera página con éxito)
+        val paginatedResult = PaginatedResult(
+            items = listOf(firstPageCharacter),
+            hasNextPage = true
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
+
+        val favoriteIdsFlow = MutableStateFlow(emptySet<Int>())
+        coEvery { observeFavoriteIdsUseCase() } returns favoriteIdsFlow
+
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        advanceUntilIdle()
+
+        // Verificar que el estado inicial no tenga favoritos
+        val successStateBefore = viewModel.uiState.value as CharactersUiState.Success
+        assertTrue(successStateBefore.favoriteIds.isEmpty())
+
+        // When (Cuando se emite un ID favorito)
+        favoriteIdsFlow.value = setOf(FIRST_CHARACTER_ID)
+        advanceUntilIdle()
+
+        // Then (Entonces el estado de UI refleja el nuevo favorito)
+        val successStateAfter = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(setOf(FIRST_CHARACTER_ID), successStateAfter.favoriteIds)
+    }
+
+    /**
+     * Verifica que la llamada a toggleFavorite invoque el caso de uso correspondiente.
+     */
+    @Test
+    fun toggleFavorite_invokes_usecase() = runTest {
+        // Given (Dado que se carga la primera página con éxito)
+        val paginatedResult = PaginatedResult(
+            items = listOf(firstPageCharacter),
+            hasNextPage = true
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
+        coEvery { toggleFavoriteUseCase(firstPageCharacter) } returns Unit
+
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase)
+        advanceUntilIdle()
+
+        // When (Cuando se solicita alternar favorito)
+        viewModel.toggleFavorite(firstPageCharacter)
+        advanceUntilIdle()
+
+        // Then (Entonces se invoca el caso de uso correspondiente)
+        coVerify { toggleFavoriteUseCase(firstPageCharacter) }
     }
 }

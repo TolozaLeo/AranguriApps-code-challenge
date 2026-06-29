@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
@@ -45,7 +46,7 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
  * error y contenido. Implementa paginación automática al detectar proximidad al
  * final de la lista.
  *
- * @param onCharacterClick Callback que se ejecuta al seleccionar un personaje, recibiendo su nombre.
+ * @param onCharacterClick Callback que se ejecuta al seleccionar un personaje, recibiendo el [Character] completo.
  * @param modifier Modificador para aplicar a la pantalla.
  * @param viewModel ViewModel inyectado por Hilt que gestiona el estado de la pantalla.
  */
@@ -53,7 +54,7 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 @Composable
 fun CharactersScreen(
     modifier: Modifier = Modifier,
-    onCharacterClick: (String) -> Unit = {},
+    onCharacterClick: (Character) -> Unit = {},
     viewModel: CharactersViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,6 +83,7 @@ fun CharactersScreen(
                 SuccessContent(
                     state = state,
                     onCharacterClick = onCharacterClick,
+                    onFavoriteClick = viewModel::toggleFavorite,
                     onLoadMore = viewModel::loadNextPage,
                     innerPadding = innerPadding
                 )
@@ -146,13 +148,15 @@ private fun ErrorContent(
  *
  * @param state Estado exitoso con la lista de personajes y metadatos de paginación.
  * @param onCharacterClick Callback al seleccionar un personaje.
+ * @param onFavoriteClick Callback al presionar favoritos sobre un personaje.
  * @param onLoadMore Callback para solicitar la carga de la siguiente página.
  * @param innerPadding Padding proporcionado por el Scaffold.
  */
 @Composable
 private fun SuccessContent(
     state: CharactersUiState.Success,
-    onCharacterClick: (String) -> Unit,
+    onCharacterClick: (Character) -> Unit,
+    onFavoriteClick: (Character) -> Unit,
     onLoadMore: () -> Unit,
     innerPadding: PaddingValues
 ) {
@@ -188,9 +192,12 @@ private fun SuccessContent(
             items = state.characters,
             key = { character -> character.id }
         ) { character ->
+            val isFavorite = state.favoriteIds.contains(character.id)
             CharacterCard(
                 character = character,
-                onClick = { onCharacterClick(character.name) }
+                initialIsFavorite = isFavorite,
+                onFavoriteClick = { onFavoriteClick(character) },
+                onClick = { onCharacterClick(character) }
             )
         }
 

@@ -5,12 +5,15 @@ import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharactersListResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.InfoDto
+import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
@@ -256,5 +259,52 @@ class CharacterRepositoryImplTest {
         assertTrue(result.isFailure)
         val exception = result.exceptionOrNull()
         assertEquals(ERROR_MESSAGE_API, exception?.message)
+    }
+
+    /**
+     * Verifica que [CharacterRepositoryImpl.getFavoriteCharacters] retorne inicialmente los 3 personajes precargados.
+     */
+    @Test
+    fun getFavoriteCharacters_returns_prepopulated_characters() = runTest {
+        // When
+        val favorites = repository.getFavoriteCharacters().first()
+
+        // Then
+        assertEquals(3, favorites.size)
+        assertTrue(favorites.any { it.name == "Mickey Mouse" })
+        assertTrue(favorites.any { it.name == "Donald Duck" })
+        assertTrue(favorites.any { it.name == "Goofy" })
+    }
+
+    /**
+     * Verifica que [CharacterRepositoryImpl.toggleFavorite] remueva un personaje si ya existía en favoritos
+     * y lo agregue si no existía.
+     */
+    @Test
+    fun toggleFavorite_adds_and_removes_character() = runTest {
+        val sample = Character(
+            id = 999,
+            name = "Minnie Mouse",
+            imageUrl = "",
+            url = "",
+            films = emptyList(),
+            shortFilms = emptyList(),
+            tvShows = emptyList(),
+            videoGames = emptyList()
+        )
+
+        // 1. Agregar a favoritos
+        repository.toggleFavorite(sample)
+        var favorites = repository.getFavoriteCharacters().first()
+        var ids = repository.getFavoriteIds().first()
+        assertEquals(4, favorites.size)
+        assertTrue(ids.contains(999))
+
+        // 2. Quitar de favoritos
+        repository.toggleFavorite(sample)
+        favorites = repository.getFavoriteCharacters().first()
+        ids = repository.getFavoriteIds().first()
+        assertEquals(3, favorites.size)
+        assertFalse(ids.contains(999))
     }
 }

@@ -27,21 +27,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyAsyncImage
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
 /**
- * Pantalla de detalle que muestra la información extendida de un personaje de Disney.
+ * Pantalla de detalle que muestra la información extendida de un personaje de Disney real.
  *
  * Presenta una imagen destacada del personaje, el listado de producciones en las que aparece
  * agrupado por categorías (películas, cortos, shows de TV, videojuegos), y cuenta con
  * comportamiento adaptable y soporte para regresar a la pantalla anterior.
  *
- * @param characterName Nombre del personaje del cual se mostrarán los detalles.
+ * @param character El objeto [Character] real del personaje a detallar.
  * @param isSinglePane Indica si la pantalla se muestra de forma individual (ocupa todo el ancho de pantalla).
  * @param onBack Callback que se ejecuta al presionar el botón de regresar.
  * @param modifier Modificador para aplicar al diseño de la pantalla.
@@ -50,18 +50,17 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 @Composable
 fun DetailsScreen(
     modifier: Modifier = Modifier,
-    characterName: String,
+    character: Character,
     isSinglePane: Boolean = true,
     onBack: () -> Unit = {},
 ) {
-    val detail = getMockCharacterDetail(characterName)
     val scrollState = rememberScrollState()
 
     Scaffold(
         modifier = modifier,
         topBar = {
             DisneyTopAppBar(
-                titleText = characterName,
+                titleText = character.name,
                 isCentered = true,
                 isMediumTitle = false,
                 navigationIcon = {
@@ -84,11 +83,10 @@ fun DetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
-            // Imagen de portada del personaje de ancho completo
-            AsyncImage(
-                model = detail.imageUrl,
-                contentDescription = "Imagen de $characterName",
-                contentScale = ContentScale.Crop,
+            // Imagen de portada del personaje de ancho completo usando el componente de imagen común
+            DisneyAsyncImage(
+                imageUrl = character.imageUrl,
+                contentDescription = "Imagen de ${character.name}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
@@ -119,39 +117,39 @@ fun DetailsScreen(
 
             // Construir lista de categorías activas para renderizado condicional ordenadas
             val activeSections = buildList {
-                if (detail.films.isNotEmpty()) {
+                if (character.films.isNotEmpty()) {
                     add(
                         Triple(
                             "Películas",
                             Icons.Default.Movie,
-                            detail.films
+                            character.films
                         )
                     )
                 }
-                if (detail.tvShows.isNotEmpty()) {
+                if (character.tvShows.isNotEmpty()) {
                     add(
                         Triple(
                             "Programas de TV",
                             Icons.Default.Tv,
-                            detail.tvShows
+                            character.tvShows
                         )
                     )
                 }
-                if (detail.shortFilms.isNotEmpty()) {
+                if (character.shortFilms.isNotEmpty()) {
                     add(
                         Triple(
                             "Cortometrajes",
                             Icons.Default.Slideshow,
-                            detail.shortFilms
+                            character.shortFilms
                         )
                     )
                 }
-                if (detail.videoGames.isNotEmpty()) {
+                if (character.videoGames.isNotEmpty()) {
                     add(
                         Triple(
                             "Videojuegos",
                             Icons.Default.SportsEsports,
-                            detail.videoGames
+                            character.videoGames
                         )
                     )
                 }
@@ -214,46 +212,4 @@ fun DetailsScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
-}
-
-/**
- * Representa los detalles ficticios/mockeados del personaje para la visualización del diseño.
- */
-private data class MockCharacterDetail(
-    val name: String,
-    val imageUrl: String,
-    val films: List<String>,
-    val tvShows: List<String>,
-    val shortFilms: List<String>,
-    val videoGames: List<String>
-)
-
-/**
- * Provee datos mockeados simulados para el personaje seleccionado.
- *
- * Utiliza el nombre para variar la disponibilidad de categorías y verificar
- * el renderizado condicional en la pantalla de detalle, replicando los datos
- * de la imagen de referencia.
- */
-private fun getMockCharacterDetail(name: String): MockCharacterDetail {
-    return MockCharacterDetail(
-        name = name,
-        imageUrl = "https://picsum.photos/seed/${name.hashCode()}/800/400",
-        films = listOf(
-            "Fantasia (1940)",
-            "Mickey, Donald, Goofy: The Three Musketeers",
-            "Saving Mr. Banks"
-        ),
-        tvShows = listOf(
-            "Mickey Mouse Clubhouse",
-            "The Wonderful World of Mickey Mouse"
-        ),
-        shortFilms = listOf(
-            "Steamboat Willie (1928)",
-            "The Band Concert"
-        ),
-        videoGames = listOf(
-            "Kingdom Hearts Series"
-        )
-    )
 }

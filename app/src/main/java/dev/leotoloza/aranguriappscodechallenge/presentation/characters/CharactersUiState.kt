@@ -24,6 +24,7 @@ sealed interface CharactersUiState {
      */
     data class Success(
         val characters: List<Character>,
+        val favoriteIds: Set<Int> = emptySet(),
         val isLoadingNextPage: Boolean,
         val hasNextPage: Boolean
     ) : CharactersUiState

@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.characters.CharactersScreen
 import dev.leotoloza.aranguriappscodechallenge.presentation.details.DetailsScreen
 import dev.leotoloza.aranguriappscodechallenge.presentation.favorites.FavoritesScreen
@@ -43,7 +44,7 @@ fun AppNavigation(
 ) {
     // Estado del destino seleccionado actualmente
     var currentDestination by remember { mutableStateOf(BottomNavigation.CHARACTERS) }
-    var selectedCharacterName by remember { mutableStateOf<String?>(null) }
+    var selectedCharacter by remember { mutableStateOf<Character?>(null) }
 
     val customItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -61,16 +62,16 @@ fun AppNavigation(
         )
     )
 
-    val currentCharacterName = selectedCharacterName
-    if (currentCharacterName != null) {
+    val currentCharacter = selectedCharacter
+    if (currentCharacter != null) {
         // Intercepta el gesto de retroceso del sistema en la pantalla de detalle
         BackHandler(enabled = true) {
             // Regresa a la pantalla origen (currentDestination) al quitar el personaje seleccionado
-            selectedCharacterName = null
+            selectedCharacter = null
         }
         DetailsScreen(
-            characterName = currentCharacterName,
-            onBack = { selectedCharacterName = null },
+            character = currentCharacter,
+            onBack = { selectedCharacter = null },
             modifier = modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
@@ -100,7 +101,7 @@ fun AppNavigation(
                     val isSelected = currentDestination == destination
                     item(
                         selected = isSelected, onClick = {
-                        selectedCharacterName = null
+                        selectedCharacter = null
                         currentDestination = destination
                     }, icon = {
                         Column(
@@ -131,7 +132,7 @@ fun AppNavigation(
             when (currentDestination) {
                 BottomNavigation.CHARACTERS -> {
                     CharactersScreen(
-                        onCharacterClick = { name -> selectedCharacterName = name },
+                        onCharacterClick = { character -> selectedCharacter = character },
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background)
@@ -140,7 +141,7 @@ fun AppNavigation(
 
                 BottomNavigation.FAVORITES -> {
                     FavoritesScreen(
-                        onCharacterClick = { name -> selectedCharacterName = name },
+                        onCharacterClick = { character -> selectedCharacter = character },
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background)

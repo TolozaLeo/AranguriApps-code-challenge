@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,10 +23,14 @@ import javax.inject.Inject
  * de [CharactersUiState] que la UI observa para renderizar el estado correcto.
  *
  * @property getCharactersUseCase Caso de uso para obtener páginas de personajes.
+ * @property observeFavoriteIdsUseCase Caso de uso para observar los identificadores de favoritos.
+ * @property toggleFavoriteUseCase Caso de uso para alternar el estado de favorito de un personaje.
  */
 @HiltViewModel
 class CharactersViewModel @Inject constructor(
-    private val getCharactersUseCase: GetCharactersUseCase
+    private val getCharactersUseCase: GetCharactersUseCase,
+    private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase,
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CharactersUiState>(CharactersUiState.Loading)
@@ -38,6 +44,33 @@ class CharactersViewModel @Inject constructor(
 
     init {
         loadNextPage()
+        observeFavorites()
+    }
+
+    /**
+     * Inicia la observación del conjunto de IDs de personajes favoritos.
+     * Mantiene actualizado el estado de UI reactivamente sin recargar la lista de la API.
+     */
+    private fun observeFavorites() {
+        viewModelScope.launch {
+            observeFavoriteIdsUseCase().collect { favoriteIds ->
+                val currentState = _uiState.value
+                if (currentState is CharactersUiState.Success) {
+                    _uiState.value = currentState.copy(favoriteIds = favoriteIds)
+                }
+            }
+        }
+    }
+
+    /**
+     * Alterna el estado de favorito de un personaje delegando en el caso de uso.
+     *
+     * @param character Personaje de Disney a agregar o quitar de favoritos.
+     */
+    fun toggleFavorite(character: Character) {
+        viewModelScope.launch {
+            toggleFavoriteUseCase(character)
+        }
     }
 
     /**
@@ -103,12 +136,18 @@ class CharactersViewModel @Inject constructor(
         } else {
             emptyList()
         }
+        val favoriteIds = if (currentState is CharactersUiState.Success) {
+            currentState.favoriteIds
+        } else {
+            emptySet()
+        }
 
         hasNextPage = paginatedResult.hasNextPage
         currentPage++
 
         _uiState.value = CharactersUiState.Success(
             characters = existingCharacters + paginatedResult.items,
+            favoriteIds = favoriteIds,
             isLoadingNextPage = false,
             hasNextPage = paginatedResult.hasNextPage
         )
