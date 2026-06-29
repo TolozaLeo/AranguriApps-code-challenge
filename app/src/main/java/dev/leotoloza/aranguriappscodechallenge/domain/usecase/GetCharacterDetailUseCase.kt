@@ -2,13 +2,14 @@ package dev.leotoloza.aranguriappscodechallenge.domain.usecase
 
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.repository.CharacterRepository
+import javax.inject.Inject
 
 /**
  * Caso de uso para obtener el detalle completo de un personaje específico por su ID.
  *
  * @property repository Repositorio de personajes inyectado por la capa de inyección de dependencias.
  */
-class GetCharacterDetailUseCase(private val repository: CharacterRepository) {
+class GetCharacterDetailUseCase @Inject constructor(private val repository: CharacterRepository) {
 
     /**
      * Ejecuta la obtención del detalle de un personaje.

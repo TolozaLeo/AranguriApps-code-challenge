@@ -58,7 +58,7 @@ fun CharacterCard(
     onFavoriteClick: ((Boolean) -> Unit)? = null,
     onClick: () -> Unit = {}
 ) {
-    var isFavorite by remember { mutableStateOf(initialIsFavorite) }
+    var isFavorite by remember(initialIsFavorite) { mutableStateOf(initialIsFavorite) }
     val interactionSource = remember { MutableInteractionSource() }
 
     // Animación de escala elástica (bouncy spring) para el efecto "pop" al interactuar
