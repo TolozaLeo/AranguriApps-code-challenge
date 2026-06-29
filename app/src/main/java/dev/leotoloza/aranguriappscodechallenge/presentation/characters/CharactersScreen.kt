@@ -1,28 +1,62 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
 /**
- * Pantalla que muestra el listado adaptativo de personajes de Disney.
+ * Pantalla que muestra el listado adaptativo de personajes de Disney con scroll infinito.
+ *
+ * Observa el estado del [CharactersViewModel] para renderizar los estados de carga,
+ * error y contenido. Implementa paginación automática al detectar proximidad al
+ * final de la lista.
  *
  * @param onCharacterClick Callback que se ejecuta al seleccionar un personaje, recibiendo su nombre.
  * @param modifier Modificador para aplicar a la pantalla.
+ * @param viewModel ViewModel inyectado por Hilt que gestiona el estado de la pantalla.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationStyleApi::class)
 @Composable
 fun CharactersScreen(
-    onCharacterClick: (String) -> Unit = {}, modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
+    onCharacterClick: (String) -> Unit = {},
+    viewModel: CharactersViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
@@ -31,20 +65,157 @@ fun CharactersScreen(
                 titleText = "Personajes", scrollBehavior = scrollBehavior
             )
         }) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(340.dp),
-            contentPadding = innerPadding,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = AppTheme.spacing.marginPage),
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
-        ) {
-            items(10) { index ->
-                val characterName = "Character $index"
-                CharacterCard(
-                    name = characterName, onClick = { onCharacterClick(characterName) })
+        when (val state = uiState) {
+            is CharactersUiState.Loading -> {
+                LoadingContent(modifier = Modifier.padding(innerPadding))
+            }
+
+            is CharactersUiState.Error -> {
+                ErrorContent(
+                    message = state.message,
+                    onRetry = viewModel::retry,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+            is CharactersUiState.Success -> {
+                SuccessContent(
+                    state = state,
+                    onCharacterClick = onCharacterClick,
+                    onLoadMore = viewModel::loadNextPage,
+                    innerPadding = innerPadding
+                )
             }
         }
     }
 }
+
+/**
+ * Estado de carga inicial con indicador circular centrado en pantalla.
+ * Color: Disney Celestial Blue (#238EC1) según especificación de diseño.
+ */
+@Composable
+private fun LoadingContent(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = AppTheme.colors.primary
+        )
+    }
+}
+
+/**
+ * Estado de error con mensaje descriptivo y botón de reintentar.
+ * Los mensajes se definen en [CharactersViewModel.Companion] para evitar magic strings.
+ *
+ * @param message Mensaje de error a mostrar al usuario.
+ * @param onRetry Callback para reintentar la carga.
+ */
+@Composable
+private fun ErrorContent(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onRetry) {
+                Text(text = "Reintentar")
+            }
+        }
+    }
+}
+
+/**
+ * Contenido principal con la grilla adaptativa de personajes y scroll infinito.
+ *
+ * Detecta proximidad al final de la lista usando [derivedStateOf] sobre el estado
+ * del grid y dispara la carga de la siguiente página automáticamente. Muestra un
+ * indicador de paginación discreto al final del grid durante la carga.
+ *
+ * @param state Estado exitoso con la lista de personajes y metadatos de paginación.
+ * @param onCharacterClick Callback al seleccionar un personaje.
+ * @param onLoadMore Callback para solicitar la carga de la siguiente página.
+ * @param innerPadding Padding proporcionado por el Scaffold.
+ */
+@Composable
+private fun SuccessContent(
+    state: CharactersUiState.Success,
+    onCharacterClick: (String) -> Unit,
+    onLoadMore: () -> Unit,
+    innerPadding: PaddingValues
+) {
+    val gridState = rememberLazyGridState()
+
+    // Detección de scroll infinito: dispara la carga cuando el usuario se acerca al final
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()
+                ?: return@derivedStateOf false
+            val totalItems = gridState.layoutInfo.totalItemsCount
+            lastVisibleItem.index >= totalItems - LOAD_MORE_THRESHOLD
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) {
+            onLoadMore()
+        }
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(340.dp),
+        state = gridState,
+        contentPadding = innerPadding,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = AppTheme.spacing.marginPage),
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
+    ) {
+        items(
+            items = state.characters,
+            key = { character -> character.id }
+        ) { character ->
+            CharacterCard(
+                character = character,
+                onClick = { onCharacterClick(character.name) }
+            )
+        }
+
+        // Indicador de paginación discreto al final del grid
+        if (state.isLoadingNextPage) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppTheme.spacing.stackMd),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = AppTheme.colors.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Umbral de ítems restantes antes del final de la lista para disparar la carga
+ * de la siguiente página. Un valor de 5 proporciona una experiencia fluida de
+ * scroll infinito sin que el usuario perciba la carga.
+ */
+private const val LOAD_MORE_THRESHOLD = 5
