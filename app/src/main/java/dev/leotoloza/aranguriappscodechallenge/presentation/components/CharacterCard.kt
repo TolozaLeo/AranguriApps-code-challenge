@@ -3,10 +3,8 @@ package dev.leotoloza.aranguriappscodechallenge.presentation.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,9 +30,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
 /**
@@ -43,7 +43,7 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
  * Incluye un botón de favoritos interactivo en el extremo derecho con una animación elástica.
  * Utiliza el estilo [AppTheme.styles.characterCardStyle] para mantener la consistencia visual.
  *
- * @param name Nombre del personaje que se mostrará en la tarjeta.
+ * @param character Modelo de dominio del personaje a representar.
  * @param modifier Modificador para aplicar a la tarjeta.
  * @param initialIsFavorite Estado inicial de favoritos del personaje.
  * @param onFavoriteClick Callback que se ejecuta al presionar el botón de favoritos. Recibe el nuevo estado.
@@ -52,7 +52,7 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 @OptIn(ExperimentalFoundationStyleApi::class)
 @Composable
 fun CharacterCard(
-    name: String,
+    character: Character,
     modifier: Modifier = Modifier,
     initialIsFavorite: Boolean = false,
     onFavoriteClick: ((Boolean) -> Unit)? = null,
@@ -82,22 +82,25 @@ fun CharacterCard(
             .padding(AppTheme.spacing.stackMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        // Imagen del personaje usando componente reutilizable
+        DisneyAsyncImage(
+            imageUrl = character.imageUrl,
+            contentDescription = "Imagen de ${character.name}",
             modifier = Modifier
                 .size(100.dp)
-                .background(AppTheme.colors.primaryContainer)
+                .clip(RoundedCornerShape(8.dp))
         )
         Spacer(modifier = Modifier.width(AppTheme.spacing.stackMd))
         Column(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = name,
+                text = character.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = AppTheme.colors.onSurface
             )
             Spacer(modifier = Modifier.height(AppTheme.spacing.stackSm))
-            // TODO: Reemplazar por etiquetas de categoría reales de Disney
+            // TODO: Reemplazar por etiquetas de categoría reales (FlowRow con tags glow)
             Text(
                 text = "Category", style = MaterialTheme.typography.labelSmall
             )

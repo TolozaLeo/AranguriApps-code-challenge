@@ -4,6 +4,7 @@ import dev.leotoloza.aranguriappscodechallenge.data.network.service.DisneyApiSer
 import dev.leotoloza.aranguriappscodechallenge.data.network.mapper.toDomain
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
+import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.repository.CharacterRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,13 +14,14 @@ class CharacterRepositoryImpl @Inject constructor(
     private val apiService: DisneyApiService
 ) : CharacterRepository {
 
-    override suspend fun getCharacters(page: Int): Result<List<Character>> = withContext(Dispatchers.IO) {
+    override suspend fun getCharacters(page: Int): Result<PaginatedResult<Character>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getCharacters(page = page)
             if (response.isSuccessful) {
                 val body = response.body()
                 val characters = body?.data?.map { it.toDomain() } ?: emptyList()
-                Result.success(characters)
+                val hasNextPage = body?.info?.nextPage != null
+                Result.success(PaginatedResult(items = characters, hasNextPage = hasNextPage))
             } else {
                 Result.failure(Exception("Error al obtener personajes: ${response.code()} ${response.message()}"))
             }

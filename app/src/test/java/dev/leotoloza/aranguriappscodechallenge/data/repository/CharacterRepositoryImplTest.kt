@@ -78,10 +78,10 @@ class CharacterRepositoryImplTest {
 
         // Then (Entonces el resultado debe ser exitoso y contener los datos mapeados)
         assertTrue(result.isSuccess)
-        val characters = result.getOrThrow()
-        assertEquals(TEST_COUNT, characters.size)
-        assertEquals(TEST_ID, characters[0].id)
-        assertEquals(TEST_NAME, characters[0].name)
+        val paginatedResult = result.getOrThrow()
+        assertEquals(TEST_COUNT, paginatedResult.items.size)
+        assertEquals(TEST_ID, paginatedResult.items[0].id)
+        assertEquals(TEST_NAME, paginatedResult.items[0].name)
     }
 
     /**

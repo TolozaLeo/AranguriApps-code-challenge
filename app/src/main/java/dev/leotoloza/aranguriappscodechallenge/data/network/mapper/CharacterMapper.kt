@@ -11,7 +11,7 @@ import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 internal fun CharacterDto.toDomain(): Character = Character(
     id = id,
     name = name,
-    imageUrl = imageUrl,
+    imageUrl = imageUrl ?: "",
     url = url,
     films = films,
     shortFilms = shortFilms,

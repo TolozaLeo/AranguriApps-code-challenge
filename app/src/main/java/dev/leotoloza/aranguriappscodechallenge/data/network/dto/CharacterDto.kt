@@ -21,7 +21,7 @@ import com.squareup.moshi.JsonClass
 data class CharacterDto(
     @Json(name = "_id") val id: Int,
     val name: String,
-    val imageUrl: String,
+    val imageUrl: String?,
     val url: String,
     val films: List<String>,
     val shortFilms: List<String>,
