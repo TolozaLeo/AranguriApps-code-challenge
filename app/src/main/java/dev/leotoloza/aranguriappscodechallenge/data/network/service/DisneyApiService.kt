@@ -1,4 +1,4 @@
-package dev.leotoloza.aranguriappscodechallenge.data.network
+package dev.leotoloza.aranguriappscodechallenge.data.network.service
 
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharactersListResponseDto

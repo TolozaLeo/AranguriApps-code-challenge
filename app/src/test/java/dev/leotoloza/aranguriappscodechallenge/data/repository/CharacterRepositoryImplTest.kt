@@ -1,6 +1,6 @@
 package dev.leotoloza.aranguriappscodechallenge.data.repository
 
-import dev.leotoloza.aranguriappscodechallenge.data.network.DisneyApiService
+import dev.leotoloza.aranguriappscodechallenge.data.network.service.DisneyApiService
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharactersListResponseDto

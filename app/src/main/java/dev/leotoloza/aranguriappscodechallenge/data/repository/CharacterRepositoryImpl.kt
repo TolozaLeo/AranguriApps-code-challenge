@@ -1,6 +1,6 @@
 package dev.leotoloza.aranguriappscodechallenge.data.repository
 
-import dev.leotoloza.aranguriappscodechallenge.data.network.DisneyApiService
+import dev.leotoloza.aranguriappscodechallenge.data.network.service.DisneyApiService
 import dev.leotoloza.aranguriappscodechallenge.data.network.mapper.toDomain
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
