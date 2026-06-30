@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -39,9 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.CategoryFilterBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.label
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
 
@@ -88,25 +92,57 @@ fun FavoritesScreen(
             }
 
             is FavoritesUiState.Success -> {
-                SuccessContent(
-                    characters = state.characters,
-                    onCharacterClick = onCharacterClick,
-                    onFavoriteClick = { character ->
-                        viewModel.toggleFavorite(character)
-                        scope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            val result = snackbarHostState.showSnackbar(
-                                message = "${character.name} eliminado de favoritos",
-                                actionLabel = "Deshacer",
-                                duration = SnackbarDuration.Short
-                            )
-                            if (result == SnackbarResult.ActionPerformed) {
-                                viewModel.toggleFavorite(character)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = innerPadding.calculateTopPadding())
+                ) {
+                    CategoryFilterBar(
+                        selectedCategory = state.selectedCategory,
+                        onCategorySelected = viewModel::selectCategory
+                    )
+
+                    val filteredCharacters = remember(state.characters, state.selectedCategory) {
+                        val category = state.selectedCategory
+                        if (category == null) {
+                            state.characters
+                        } else {
+                            state.characters.filter { character ->
+                                character.activeCategories().contains(category)
                             }
                         }
-                    },
-                    modifier = Modifier.padding(innerPadding)
-                )
+                    }
+
+                    if (filteredCharacters.isEmpty()) {
+                        EmptyCategoryContent(
+                            categoryLabel = state.selectedCategory?.label.orEmpty(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        SuccessContent(
+                            characters = filteredCharacters,
+                            onCharacterClick = onCharacterClick,
+                            onFavoriteClick = { character ->
+                                viewModel.toggleFavorite(character)
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "${character.name} eliminado de favoritos",
+                                        actionLabel = "Deshacer",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.toggleFavorite(character)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(
+                                bottom = innerPadding.calculateBottomPadding()
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -173,10 +209,12 @@ private fun SuccessContent(
     characters: List<Character>,
     onCharacterClick: (Character) -> Unit,
     onFavoriteClick: (Character) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(340.dp),
+        contentPadding = contentPadding,
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = AppTheme.spacing.marginPage),
@@ -200,6 +238,39 @@ private fun SuccessContent(
                         stiffness = Spring.StiffnessLow
                     )
                 )
+            )
+        }
+    }
+}
+
+/**
+ * Contenido mostrado cuando existen favoritos agregados pero ninguno coincide con la categoría del filtro.
+ */
+@Composable
+private fun EmptyCategoryContent(
+    categoryLabel: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Text(
+                text = "No tienes favoritos en la categoría \"$categoryLabel\"",
+                style = MaterialTheme.typography.titleMedium,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Prueba seleccionando otra categoría o marcando más personajes favoritos",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
+                textAlign = TextAlign.Center
             )
         }
     }

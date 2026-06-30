@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.CategoryFilterBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
@@ -113,14 +115,27 @@ fun CharactersScreen(
             }
 
             is CharactersUiState.Success -> {
-                SuccessContent(
-                    state = state,
-                    gridState = gridState,
-                    onCharacterClick = onCharacterClick,
-                    onFavoriteClick = viewModel::toggleFavorite,
-                    onLoadMore = viewModel::loadNextPage,
-                    innerPadding = innerPadding
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = innerPadding.calculateTopPadding())
+                ) {
+                    CategoryFilterBar(
+                        selectedCategory = state.selectedCategory,
+                        onCategorySelected = viewModel::selectCategory
+                    )
+                    SuccessContent(
+                        state = state,
+                        gridState = gridState,
+                        onCharacterClick = onCharacterClick,
+                        onFavoriteClick = viewModel::toggleFavorite,
+                        onLoadMore = viewModel::loadNextPage,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(
+                            bottom = innerPadding.calculateBottomPadding()
+                        )
+                    )
+                }
             }
         }
     }
@@ -193,7 +208,8 @@ private fun SuccessContent(
     onCharacterClick: (Character) -> Unit,
     onFavoriteClick: (Character) -> Unit,
     onLoadMore: () -> Unit,
-    innerPadding: PaddingValues
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
 
     // Detección de scroll infinito: dispara la carga cuando el usuario se acerca al final
@@ -212,18 +228,29 @@ private fun SuccessContent(
         }
     }
 
+    val filteredCharacters = remember(state.characters, state.selectedCategory) {
+        val category = state.selectedCategory
+        if (category == null) {
+            state.characters
+        } else {
+            state.characters.filter { character ->
+                character.activeCategories().contains(category)
+            }
+        }
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(340.dp),
         state = gridState,
-        contentPadding = innerPadding,
-        modifier = Modifier
+        contentPadding = contentPadding,
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = AppTheme.spacing.marginPage),
         horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
     ) {
         items(
-            items = state.characters,
+            items = filteredCharacters,
             key = { character -> character.id }
         ) { character ->
             val isFavorite = state.favoriteIds.contains(character.id)

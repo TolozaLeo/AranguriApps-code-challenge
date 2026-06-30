@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,8 @@ class FavoritesViewModel @Inject constructor(
      */
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
+    private var selectedCategory: CharacterCategory? = null
+
     init {
         observeFavorites()
     }
@@ -50,6 +53,19 @@ class FavoritesViewModel @Inject constructor(
     }
 
     /**
+     * Actualiza la categoría seleccionada para filtrar visualmente los favoritos en la UI.
+     *
+     * @param category Categoría de personajes por la que se desea filtrar, o `null` para mostrar todos.
+     */
+    fun selectCategory(category: CharacterCategory?) {
+        selectedCategory = category
+        val currentState = _uiState.value
+        if (currentState is FavoritesUiState.Success) {
+            _uiState.value = currentState.copy(selectedCategory = category)
+        }
+    }
+
+    /**
      * Inicia la observación reactiva del flujo de personajes favoritos.
      */
     private fun observeFavorites() {
@@ -58,7 +74,10 @@ class FavoritesViewModel @Inject constructor(
                 if (characters.isEmpty()) {
                     _uiState.value = FavoritesUiState.Empty
                 } else {
-                    _uiState.value = FavoritesUiState.Success(characters)
+                    _uiState.value = FavoritesUiState.Success(
+                        characters = characters,
+                        selectedCategory = selectedCategory
+                    )
                 }
             }
         }
