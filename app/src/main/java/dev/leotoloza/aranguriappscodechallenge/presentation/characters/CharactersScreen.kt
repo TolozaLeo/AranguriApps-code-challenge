@@ -56,6 +56,9 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.components.CategoryF
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySearchBar
+import androidx.compose.ui.res.stringResource
+import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
 /**
@@ -87,26 +90,36 @@ fun CharactersScreen(
     LaunchedEffect(gridState) {
         var previousIndex = 0
         var previousScrollOffset = 0
-        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }.collect { (currentIndex, currentOffset) ->
-                if (currentIndex == 0 && currentOffset == 0) {
-                    isFilterBarVisible = true
-                } else if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
+        snapshotFlow {
+            Triple(
+                gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset,
+                gridState.isScrollInProgress,
+                gridState.canScrollForward
+            )
+        }.collect { (scrollPosition, isScrolling, canScrollForward) ->
+            val (currentIndex, currentOffset) = scrollPosition
+            if (currentIndex == 0 && currentOffset == 0) {
+                isFilterBarVisible = true
+            } else if (isScrolling && canScrollForward) {
+                if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
                     isFilterBarVisible = false // Deslizando hacia abajo
                 } else if (currentIndex < previousIndex || (currentOffset < previousScrollOffset)) {
                     isFilterBarVisible = true // Deslizando hacia arriba
                 }
-                previousIndex = currentIndex
-                previousScrollOffset = currentOffset
             }
+            previousIndex = currentIndex
+            previousScrollOffset = currentOffset
+        }
     }
 
+    val retryLabel = stringResource(R.string.retry_button)
     if (state is CharactersUiState.Success) {
         val pagingError = state.pagingError
         LaunchedEffect(pagingError) {
             if (pagingError != null) {
                 val result = snackbarHostState.showSnackbar(
                     message = pagingError,
-                    actionLabel = "Reintentar",
+                    actionLabel = retryLabel,
                     duration = SnackbarDuration.Long
                 )
                 if (result == SnackbarResult.ActionPerformed) {
@@ -119,7 +132,7 @@ fun CharactersScreen(
 
     Scaffold(modifier = modifier, topBar = {
         DisneyTopAppBar(
-            titleText = "Personajes", scrollBehavior = scrollBehavior
+            titleText = stringResource(R.string.characters_title), scrollBehavior = scrollBehavior
         )
     }, snackbarHost = {
         SnackbarHost(hostState = snackbarHostState) { data ->
@@ -150,10 +163,27 @@ fun CharactersScreen(
                         enter = expandVertically() + fadeIn(),
                         exit = shrinkVertically() + fadeOut()
                     ) {
-                        CategoryFilterBar(
-                            selectedCategory = state.selectedCategory,
-                            onCategorySelected = viewModel::selectCategory
-                        )
+                        Column {
+                            var localQuery by remember(state.searchQuery) {
+                                mutableStateOf(state.searchQuery ?: "")
+                            }
+
+                            DisneySearchBar(
+                                query = localQuery,
+                                onQueryChanged = { localQuery = it },
+                                onSearchTriggered = { query ->
+                                    viewModel.searchCharacters(query)
+                                },
+                                onClearClicked = {
+                                    localQuery = ""
+                                    viewModel.clearSearch()
+                                }
+                            )
+                            CategoryFilterBar(
+                                selectedCategory = state.selectedCategory,
+                                onCategorySelected = viewModel::selectCategory
+                            )
+                        }
                     }
                     SuccessContent(
                         state = state,
@@ -209,7 +239,7 @@ private fun ErrorContent(
             )
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onRetry) {
-                Text(text = "Reintentar")
+                Text(text = stringResource(R.string.retry_button))
             }
         }
     }

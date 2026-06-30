@@ -41,22 +41,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
-import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CategoryFilterBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySearchBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
-import dev.leotoloza.aranguriappscodechallenge.presentation.components.label
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.labelResId
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
 
@@ -84,22 +86,31 @@ fun FavoritesScreen(
     LaunchedEffect(gridState) {
         var previousIndex = 0
         var previousScrollOffset = 0
-        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }.collect { (currentIndex, currentOffset) ->
-                if (currentIndex == 0 && currentOffset == 0) {
-                    isFilterBarVisible = true
-                } else if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
+        snapshotFlow {
+            Triple(
+                gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset,
+                gridState.isScrollInProgress,
+                gridState.canScrollForward
+            )
+        }.collect { (scrollPosition, isScrolling, canScrollForward) ->
+            val (currentIndex, currentOffset) = scrollPosition
+            if (currentIndex == 0 && currentOffset == 0) {
+                isFilterBarVisible = true
+            } else if (isScrolling && canScrollForward) {
+                if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
                     isFilterBarVisible = false // Deslizando hacia abajo
                 } else if (currentIndex < previousIndex || (currentOffset < previousScrollOffset)) {
                     isFilterBarVisible = true // Deslizando hacia arriba
                 }
-                previousIndex = currentIndex
-                previousScrollOffset = currentOffset
             }
+            previousIndex = currentIndex
+            previousScrollOffset = currentOffset
+        }
     }
 
     Scaffold(modifier = modifier, topBar = {
         DisneyTopAppBar(
-            titleText = "Favoritos", scrollBehavior = scrollBehavior
+            titleText = stringResource(R.string.favorites_title), scrollBehavior = scrollBehavior
         )
     }, snackbarHost = {
         SnackbarHost(hostState = snackbarHostState) { data ->
@@ -116,64 +127,80 @@ fun FavoritesScreen(
             }
 
             is FavoritesUiState.Success -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = innerPadding.calculateTopPadding())
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding())
+            ) {
+                AnimatedVisibility(
+                    visible = isFilterBarVisible,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    AnimatedVisibility(
-                        visible = isFilterBarVisible,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
+                    Column {
+                        var localQuery by remember(state.searchQuery) {
+                            mutableStateOf(state.searchQuery)
+                        }
+
+                        DisneySearchBar(
+                            query = localQuery,
+                            onQueryChanged = { localQuery = it },
+                            onSearchTriggered = { query ->
+                                viewModel.searchCharacters(query)
+                            },
+                            onClearClicked = {
+                                localQuery = ""
+                                viewModel.clearSearch()
+                            }
+                        )
                         CategoryFilterBar(
                             selectedCategory = state.selectedCategory,
                             onCategorySelected = viewModel::selectCategory
                         )
                     }
+                }
 
-                    val filteredCharacters = remember(state.characters, state.selectedCategory) {
-                        val category = state.selectedCategory
-                        if (category == null) {
-                            state.characters
-                        } else {
-                            state.characters.filter { character ->
-                                character.activeCategories().contains(category)
-                            }
-                        }
-                    }
-
-                    if (filteredCharacters.isEmpty()) {
-                        EmptyCategoryContent(
-                            categoryLabel = state.selectedCategory?.label.orEmpty(),
+                if (state.characters.isEmpty()) {
+                    if (state.searchQuery.isNotEmpty()) {
+                        EmptySearchContent(
+                            query = state.searchQuery,
                             modifier = Modifier.weight(1f)
                         )
                     } else {
-                        SuccessContent(
-                            characters = filteredCharacters,
-                            gridState = gridState,
-                            onCharacterClick = onCharacterClick,
-                            onFavoriteClick = { character ->
-                                viewModel.toggleFavorite(character)
-                                scope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = "${character.name} eliminado de favoritos",
-                                        actionLabel = "Deshacer",
-                                        duration = SnackbarDuration.Short
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        viewModel.toggleFavorite(character)
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(
-                                bottom = innerPadding.calculateBottomPadding()
-                            )
+                        EmptyCategoryContent(
+                            categoryLabel = state.selectedCategory?.labelResId?.let { stringResource(it) }.orEmpty(),
+                            modifier = Modifier.weight(1f)
                         )
                     }
+                } else {
+                    val removedMessageTemplate = stringResource(R.string.character_removed_from_favorites)
+                    val undoActionLabel = stringResource(R.string.undo_action)
+
+                    SuccessContent(
+                        characters = state.characters,
+                        gridState = gridState,
+                        onCharacterClick = onCharacterClick,
+                        onFavoriteClick = { character ->
+                            viewModel.toggleFavorite(character)
+                            scope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                val result = snackbarHostState.showSnackbar(
+                                    message = removedMessageTemplate.format(character.name),
+                                    actionLabel = undoActionLabel,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    viewModel.toggleFavorite(character)
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(
+                            bottom = innerPadding.calculateBottomPadding()
+                        )
+                    )
                 }
+            }
             }
         }
     }
@@ -212,14 +239,14 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Aún no tienes personajes favoritos",
+                text = stringResource(R.string.empty_favorites_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Explora y marca corazones en la pantalla de Personajes",
+                text = stringResource(R.string.empty_favorites_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
                 textAlign = TextAlign.Center
@@ -285,14 +312,47 @@ private fun EmptyCategoryContent(
             horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                text = "No tienes favoritos en la categoría \"$categoryLabel\"",
+                text = stringResource(R.string.empty_favorites_category_title, categoryLabel),
                 style = MaterialTheme.typography.titleMedium,
                 color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Prueba seleccionando otra categoría o marcando más personajes favoritos",
+                text = stringResource(R.string.empty_favorites_category_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * Contenido mostrado cuando la búsqueda de favoritos no arroja resultados.
+ */
+@Composable
+private fun EmptySearchContent(
+    query: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.empty_search_favorites_title, query),
+                style = MaterialTheme.typography.titleMedium,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.empty_search_favorites_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
                 textAlign = TextAlign.Center

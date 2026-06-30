@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
+import dev.leotoloza.aranguriappscodechallenge.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
@@ -94,7 +96,7 @@ fun CharacterCard(
                 // Imagen del personaje ocupando el total del alto de la card y siendo cuadrada
                 DisneyAsyncImage(
                     imageUrl = character.imageUrl,
-                    contentDescription = "Imagen de ${character.name}",
+                    contentDescription = stringResource(R.string.character_image_desc, character.name),
                     modifier = Modifier
                         .size(120.dp)
                         .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
@@ -124,7 +126,7 @@ fun CharacterCard(
                     ) {
                         character.activeCategories().forEach { category ->
                             CategoryTag(
-                                text = category.label,
+                                text = stringResource(category.labelResId),
                                 colors = category.categoryColor
                             )
                         }
@@ -148,7 +150,7 @@ fun CharacterCard(
             ) {
                 Icon(
                     imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                    contentDescription = stringResource(if (isFavorite) R.string.remove_favorite_desc else R.string.add_favorite_desc),
                     tint = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
                         alpha = 0.6f
                     ),

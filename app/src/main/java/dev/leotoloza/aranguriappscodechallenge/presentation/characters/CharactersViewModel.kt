@@ -6,10 +6,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
+import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.FilterCharactersUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,13 +31,15 @@ import javax.inject.Inject
  * @property observeFavoriteIdsUseCase Caso de uso para observar los identificadores de favoritos.
  * @property toggleFavoriteUseCase Caso de uso para alternar el estado de favorito de un personaje.
  * @property observeFavoriteCharactersUseCase Caso de uso para obtener la lista de personajes favoritos guardados localmente.
+ * @property filterCharactersUseCase Caso de uso para filtrar personajes remotamente en la API por nombre.
  */
 @HiltViewModel
 class CharactersViewModel @Inject constructor(
     private val getCharactersUseCase: GetCharactersUseCase,
     private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
-    private val observeFavoriteCharactersUseCase: ObserveFavoriteCharactersUseCase
+    private val observeFavoriteCharactersUseCase: ObserveFavoriteCharactersUseCase,
+    private val filterCharactersUseCase: FilterCharactersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CharactersUiState>(CharactersUiState.Loading)
@@ -48,6 +52,7 @@ class CharactersViewModel @Inject constructor(
     private var isLoadingPage = false
     private var favoriteIds: Set<Int> = emptySet()
     private var selectedCategory: CharacterCategory? = null
+    private var searchQuery: String? = null
 
     init {
         loadNextPage()
@@ -65,7 +70,9 @@ class CharactersViewModel @Inject constructor(
                 val currentState = _uiState.value
                 if (currentState is CharactersUiState.Success) {
                     _uiState.value = currentState.copy(
-                        favoriteIds = ids, selectedCategory = selectedCategory
+                        favoriteIds = ids,
+                        selectedCategory = selectedCategory,
+                        searchQuery = searchQuery
                     )
                 }
             }
@@ -98,14 +105,59 @@ class CharactersViewModel @Inject constructor(
         // Mostrar indicador de paginación si ya hay datos cargados
         updateLoadingState()
 
+        val query = searchQuery
         viewModelScope.launch {
-            getCharactersUseCase(currentPage).onSuccess { paginatedResult ->
-                    handleSuccess(paginatedResult)
-                }.onFailure { error ->
-                    handleError(error)
-                }
+            val result = if (!query.isNullOrBlank()) {
+                filterCharactersUseCase(CharacterFilter.ByName(query), currentPage)
+                    .map { list ->
+                        PaginatedResult(items = list, hasNextPage = list.size >= 50)
+                    }
+            } else {
+                getCharactersUseCase(currentPage)
+            }
+
+            result.onSuccess { paginatedResult ->
+                handleSuccess(paginatedResult)
+            }.onFailure { error ->
+                handleError(error)
+            }
             isLoadingPage = false
         }
+    }
+
+    /**
+     * Inicia la búsqueda remota de personajes por su nombre.
+     * Limpia la lista actual y reinicia la paginación para cargar la primera página de resultados.
+     *
+     * @param query Nombre o término de búsqueda para filtrar personajes.
+     */
+    fun searchCharacters(query: String) {
+        val cleanQuery = query.trim()
+        if (cleanQuery.isEmpty()) {
+            clearSearch()
+            return
+        }
+
+        searchQuery = cleanQuery
+        currentPage = INITIAL_PAGE
+        hasNextPage = true
+        isLoadingPage = false
+        _uiState.value = CharactersUiState.Loading
+
+        loadNextPage()
+    }
+
+    /**
+     * Limpia la búsqueda activa y restablece el listado general de personajes desde la página 1.
+     */
+    fun clearSearch() {
+        searchQuery = null
+        currentPage = INITIAL_PAGE
+        hasNextPage = true
+        isLoadingPage = false
+        _uiState.value = CharactersUiState.Loading
+
+        loadNextPage()
     }
 
     /**
@@ -140,7 +192,10 @@ class CharactersViewModel @Inject constructor(
         selectedCategory = category
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
-            _uiState.value = currentState.copy(selectedCategory = category)
+            _uiState.value = currentState.copy(
+                selectedCategory = category,
+                searchQuery = searchQuery
+            )
         }
     }
 
@@ -153,7 +208,9 @@ class CharactersViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
             _uiState.value = currentState.copy(
-                isLoadingNextPage = true, selectedCategory = selectedCategory
+                isLoadingNextPage = true,
+                selectedCategory = selectedCategory,
+                searchQuery = searchQuery
             )
         }
         // Si el estado es Loading (primera carga), no se modifica — ya está en Loading
@@ -179,7 +236,8 @@ class CharactersViewModel @Inject constructor(
             favoriteIds = favoriteIds,
             isLoadingNextPage = false,
             hasNextPage = paginatedResult.hasNextPage,
-            selectedCategory = selectedCategory
+            selectedCategory = selectedCategory,
+            searchQuery = searchQuery
         )
     }
 
@@ -200,7 +258,8 @@ class CharactersViewModel @Inject constructor(
             _uiState.value = currentState.copy(
                 isLoadingNextPage = false,
                 pagingError = message,
-                selectedCategory = selectedCategory
+                selectedCategory = selectedCategory,
+                searchQuery = searchQuery
             )
             return
         }
@@ -216,7 +275,8 @@ class CharactersViewModel @Inject constructor(
                         favoriteIds = localFavorites.map { it.id }.toSet(),
                         isLoadingNextPage = false,
                         hasNextPage = false,
-                        selectedCategory = selectedCategory
+                        selectedCategory = selectedCategory,
+                        searchQuery = searchQuery
                     )
                 } else {
                     // Si no hay favoritos locales, mostrar pantalla de error completa

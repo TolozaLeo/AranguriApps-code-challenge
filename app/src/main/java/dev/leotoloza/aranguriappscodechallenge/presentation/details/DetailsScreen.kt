@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyAsyncImage
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
@@ -74,7 +76,7 @@ fun DetailsScreen(
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Regresar",
+                                contentDescription = stringResource(R.string.back_action_desc),
                                 tint = AppTheme.colors.primary
                             )
                         }
@@ -92,7 +94,7 @@ fun DetailsScreen(
             // Imagen de portada del personaje de ancho completo usando el componente de imagen común con efecto de desvanecimiento
             DisneyAsyncImage(
                 imageUrl = character.imageUrl,
-                contentDescription = "Imagen de ${character.name}",
+                contentDescription = stringResource(R.string.character_image_desc, character.name),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
@@ -122,7 +124,7 @@ fun DetailsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Aparece en:",
+                    text = stringResource(R.string.appears_in),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = AppTheme.colors.onSurface
                 )
@@ -140,7 +142,7 @@ fun DetailsScreen(
                 if (character.films.isNotEmpty()) {
                     add(
                         Triple(
-                            "Películas",
+                            stringResource(R.string.category_films),
                             Icons.Default.Movie,
                             character.films
                         )
@@ -149,7 +151,7 @@ fun DetailsScreen(
                 if (character.tvShows.isNotEmpty()) {
                     add(
                         Triple(
-                            "Programas de TV",
+                            stringResource(R.string.category_tv_shows),
                             Icons.Default.Tv,
                             character.tvShows
                         )
@@ -158,7 +160,7 @@ fun DetailsScreen(
                 if (character.shortFilms.isNotEmpty()) {
                     add(
                         Triple(
-                            "Cortometrajes",
+                            stringResource(R.string.category_short_films),
                             Icons.Default.Slideshow,
                             character.shortFilms
                         )
@@ -167,7 +169,7 @@ fun DetailsScreen(
                 if (character.videoGames.isNotEmpty()) {
                     add(
                         Triple(
-                            "Videojuegos",
+                            stringResource(R.string.category_video_games),
                             Icons.Default.SportsEsports,
                             character.videoGames
                         )

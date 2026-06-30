@@ -26,6 +26,7 @@ sealed interface FavoritesUiState {
      */
     data class Success(
         val characters: List<Character>,
-        val selectedCategory: CharacterCategory? = null
+        val selectedCategory: CharacterCategory? = null,
+        val searchQuery: String = ""
     ) : FavoritesUiState
 }

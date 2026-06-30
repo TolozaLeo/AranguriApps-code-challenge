@@ -2,10 +2,12 @@ package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
+import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
+import dev.leotoloza.aranguriappscodechallenge.domain.usecase.FilterCharactersUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -40,6 +42,7 @@ class CharactersViewModelTest {
     private val observeFavoriteIdsUseCase: ObserveFavoriteIdsUseCase = mockk()
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase = mockk()
     private val observeFavoriteCharactersUseCase: ObserveFavoriteCharactersUseCase = mockk()
+    private val filterCharactersUseCase: FilterCharactersUseCase = mockk()
     private val testDispatcher = StandardTestDispatcher()
 
     private companion object {
@@ -86,6 +89,7 @@ class CharactersViewModelTest {
         Dispatchers.setMain(testDispatcher)
         coEvery { observeFavoriteIdsUseCase() } returns flowOf(emptySet())
         coEvery { observeFavoriteCharactersUseCase() } returns flowOf(emptyList())
+        coEvery { filterCharactersUseCase(any(), any()) } returns Result.success(emptyList())
     }
 
     @After
@@ -107,7 +111,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
 
         // When (Cuando se crea el ViewModel)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
 
         // Then (Entonces el estado inicial es Loading)
         assertEquals(CharactersUiState.Loading, viewModel.uiState.value)
@@ -144,7 +148,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(SECOND_PAGE) } returns Result.success(secondPageResult)
 
         // When (Cuando se carga la primera página)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // When (Cuando se solicita la segunda página)
@@ -172,7 +176,7 @@ class CharactersViewModelTest {
         )
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(lastPageResult)
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // When (Cuando se intenta cargar la siguiente página)
@@ -195,7 +199,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(UnknownHostException())
 
         // When (Cuando se crea el ViewModel y se completa la coroutine)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // Then (Entonces el estado es Error con mensaje de sin conexión)
@@ -217,7 +221,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
 
         // When (Cuando se crea el ViewModel y se completa la coroutine)
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // Then (Entonces el estado es Error con mensaje genérico)
@@ -238,7 +242,7 @@ class CharactersViewModelTest {
         // Given (Dado que la primera carga falla)
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.failure(Exception(ERROR_MESSAGE))
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // Verificar que estamos en estado de error
@@ -274,7 +278,7 @@ class CharactersViewModelTest {
         )
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(firstPageResult)
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // Given (Dado que la segunda página falla)
@@ -309,7 +313,8 @@ class CharactersViewModelTest {
             getCharactersUseCase,
             observeFavoriteIdsUseCase,
             toggleFavoriteUseCase,
-            observeFavoriteCharactersUseCase
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
         )
         advanceUntilIdle()
 
@@ -342,7 +347,8 @@ class CharactersViewModelTest {
             getCharactersUseCase,
             observeFavoriteIdsUseCase,
             toggleFavoriteUseCase,
-            observeFavoriteCharactersUseCase
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
         )
         advanceUntilIdle()
 
@@ -375,7 +381,8 @@ class CharactersViewModelTest {
             getCharactersUseCase,
             observeFavoriteIdsUseCase,
             toggleFavoriteUseCase,
-            observeFavoriteCharactersUseCase
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
         )
         advanceUntilIdle()
 
@@ -410,7 +417,7 @@ class CharactersViewModelTest {
         val favoriteIdsFlow = MutableStateFlow(emptySet<Int>())
         coEvery { observeFavoriteIdsUseCase() } returns favoriteIdsFlow
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // Verificar que el estado inicial no tenga favoritos
@@ -439,7 +446,7 @@ class CharactersViewModelTest {
         coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
         coEvery { toggleFavoriteUseCase(firstPageCharacter) } returns Unit
 
-        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase)
+        val viewModel = CharactersViewModel(getCharactersUseCase, observeFavoriteIdsUseCase, toggleFavoriteUseCase, observeFavoriteCharactersUseCase, filterCharactersUseCase)
         advanceUntilIdle()
 
         // When (Cuando se solicita alternar favorito)
@@ -465,7 +472,8 @@ class CharactersViewModelTest {
             getCharactersUseCase,
             observeFavoriteIdsUseCase,
             toggleFavoriteUseCase,
-            observeFavoriteCharactersUseCase
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
         )
         advanceUntilIdle()
 
@@ -493,7 +501,8 @@ class CharactersViewModelTest {
             getCharactersUseCase,
             observeFavoriteIdsUseCase,
             toggleFavoriteUseCase,
-            observeFavoriteCharactersUseCase
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
         )
         advanceUntilIdle()
 
@@ -504,5 +513,113 @@ class CharactersViewModelTest {
             CharactersViewModel.ERROR_MESSAGE_NO_INTERNET,
             (state as CharactersUiState.Error).message
         )
+    }
+
+    /**
+     * Verifica que al llamar a searchCharacters("Mickey") se invoque a filterCharactersUseCase
+     * en lugar de getCharactersUseCase, reiniciando la página a 1 y actualizando la lista de personajes.
+     */
+    @Test
+    fun searchCharacters_triggers_search_on_api_correctly() = runTest {
+        // Given (Dado que la carga inicial de personajes retorna lista vacía)
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(PaginatedResult(emptyList(), false))
+
+        // Dado que la primera página de búsqueda retorna personajes con éxito)
+        val searchResult = listOf(firstPageCharacter)
+        coEvery { filterCharactersUseCase(CharacterFilter.ByName("Mickey"), FIRST_PAGE) } returns Result.success(searchResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // When (Cuando se ejecuta la búsqueda)
+        viewModel.searchCharacters("Mickey")
+        advanceUntilIdle()
+
+        // Then (Entonces el estado Success contiene la lista filtrada de la API)
+        val state = viewModel.uiState.value
+        assertTrue(state is CharactersUiState.Success)
+        val successState = state as CharactersUiState.Success
+        assertEquals(1, successState.characters.size)
+        assertEquals("Mickey Mouse", successState.characters[0].name)
+        assertEquals("Mickey", successState.searchQuery)
+        coVerify { filterCharactersUseCase(CharacterFilter.ByName("Mickey"), FIRST_PAGE) }
+    }
+
+    /**
+     * Verifica que el scroll infinito acumule los siguientes personajes filtrados de la página 2
+     * si se vuelve a llamar a loadNextPage() mientras existe una búsqueda activa.
+     */
+    @Test
+    fun searchCharacters_paging_loads_next_filtered_page() = runTest {
+        // Given (Dado que la carga inicial de personajes retorna lista vacía)
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(PaginatedResult(emptyList(), false))
+
+        // Dado que se tiene una búsqueda activa de la primera página y la segunda página también tiene resultados)
+        val firstPageSearchResult = List(50) { firstPageCharacter }
+        val secondPageSearchResult = listOf(secondPageCharacter)
+        coEvery { filterCharactersUseCase(CharacterFilter.ByName("Mickey"), FIRST_PAGE) } returns Result.success(firstPageSearchResult)
+        coEvery { filterCharactersUseCase(CharacterFilter.ByName("Mickey"), SECOND_PAGE) } returns Result.success(secondPageSearchResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        viewModel.searchCharacters("Mickey")
+        advanceUntilIdle()
+
+        // When (Cuando se carga la siguiente página de búsqueda)
+        viewModel.loadNextPage()
+        advanceUntilIdle()
+
+        // Then (Entonces se acumulan los resultados de búsqueda de la página 2)
+        val state = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(51, state.characters.size)
+        assertEquals(SECOND_CHARACTER_NAME, state.characters[50].name)
+    }
+
+    /**
+     * Verifica que al vaciar la búsqueda se reinicie la paginación y se recargue la lista de personajes general.
+     */
+    @Test
+    fun clearSearch_restores_unfiltered_paginated_list() = runTest {
+        // Given (Dado que hay una búsqueda activa cargada)
+        val searchResult = listOf(firstPageCharacter)
+        coEvery { filterCharactersUseCase(CharacterFilter.ByName("Mickey"), FIRST_PAGE) } returns Result.success(searchResult)
+        
+        val defaultResult = PaginatedResult(items = listOf(secondPageCharacter), hasNextPage = false)
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(defaultResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        viewModel.searchCharacters("Mickey")
+        advanceUntilIdle()
+
+        // When (Cuando se limpia la búsqueda)
+        viewModel.clearSearch()
+        advanceUntilIdle()
+
+        // Then (Entonces se limpia la query del estado y se vuelven a cargar los personajes generales)
+        val state = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(1, state.characters.size)
+        assertEquals(SECOND_CHARACTER_NAME, state.characters[0].name)
+        assertEquals(null, state.searchQuery)
     }
 }

@@ -16,16 +16,17 @@ import androidx.compose.ui.unit.sp
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.CategoryColor
+import dev.leotoloza.aranguriappscodechallenge.R
 
 /**
- * Obtiene la etiqueta amigable en español correspondiente para mostrar en el tag.
+ * Obtiene el ID del recurso de texto amigable en español correspondiente para mostrar en el tag.
  */
-val CharacterCategory.label: String
+val CharacterCategory.labelResId: Int
     get() = when (this) {
-        CharacterCategory.SHORT_FILM -> "Corto"
-        CharacterCategory.TV_SHOW -> "ShowTv"
-        CharacterCategory.VIDEO_GAME -> "Juego"
-        CharacterCategory.FILM -> "Pelicula"
+        CharacterCategory.SHORT_FILM -> R.string.category_short_film
+        CharacterCategory.TV_SHOW -> R.string.category_tv_show
+        CharacterCategory.VIDEO_GAME -> R.string.category_video_game
+        CharacterCategory.FILM -> R.string.category_film
     }
 
 /**
