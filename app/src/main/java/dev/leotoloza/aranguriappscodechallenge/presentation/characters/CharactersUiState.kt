@@ -33,7 +33,7 @@ sealed interface CharactersUiState {
         val hasNextPage: Boolean,
         val pagingError: String? = null,
         val selectedCategory: CharacterCategory? = null,
-        val searchQuery: String? = null
+        val searchQuery: String = ""
     ) : CharactersUiState
 
     /**

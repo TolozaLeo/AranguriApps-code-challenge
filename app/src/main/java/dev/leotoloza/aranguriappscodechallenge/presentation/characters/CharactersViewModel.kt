@@ -7,6 +7,7 @@ import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
+import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
@@ -52,7 +53,8 @@ class CharactersViewModel @Inject constructor(
     private var isLoadingPage = false
     private var favoriteIds: Set<Int> = emptySet()
     private var selectedCategory: CharacterCategory? = null
-    private var searchQuery: String? = null
+    private var searchQuery: String = ""
+    private val allLoadedCharacters = mutableListOf<Character>()
 
     init {
         loadNextPage()
@@ -69,10 +71,10 @@ class CharactersViewModel @Inject constructor(
                 favoriteIds = ids
                 val currentState = _uiState.value
                 if (currentState is CharactersUiState.Success) {
-                    _uiState.value = currentState.copy(
-                        favoriteIds = ids,
-                        selectedCategory = selectedCategory,
-                        searchQuery = searchQuery
+                    updateSuccessState(
+                        isLoadingNextPage = currentState.isLoadingNextPage,
+                        hasNextPage = currentState.hasNextPage,
+                        pagingError = currentState.pagingError
                     )
                 }
             }
@@ -107,7 +109,7 @@ class CharactersViewModel @Inject constructor(
 
         val query = searchQuery
         viewModelScope.launch {
-            val result = if (!query.isNullOrBlank()) {
+            val result = if (query.isNotBlank()) {
                 filterCharactersUseCase(CharacterFilter.ByName(query), currentPage)
                     .map { list ->
                         PaginatedResult(items = list, hasNextPage = list.size >= 50)
@@ -142,6 +144,7 @@ class CharactersViewModel @Inject constructor(
         currentPage = INITIAL_PAGE
         hasNextPage = true
         isLoadingPage = false
+        allLoadedCharacters.clear()
         _uiState.value = CharactersUiState.Loading
 
         loadNextPage()
@@ -151,10 +154,11 @@ class CharactersViewModel @Inject constructor(
      * Limpia la búsqueda activa y restablece el listado general de personajes desde la página 1.
      */
     fun clearSearch() {
-        searchQuery = null
+        searchQuery = ""
         currentPage = INITIAL_PAGE
         hasNextPage = true
         isLoadingPage = false
+        allLoadedCharacters.clear()
         _uiState.value = CharactersUiState.Loading
 
         loadNextPage()
@@ -168,6 +172,7 @@ class CharactersViewModel @Inject constructor(
         currentPage = INITIAL_PAGE
         hasNextPage = true
         isLoadingPage = false
+        allLoadedCharacters.clear()
         _uiState.value = CharactersUiState.Loading
         loadNextPage()
     }
@@ -179,7 +184,11 @@ class CharactersViewModel @Inject constructor(
     fun clearPagingError() {
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
-            _uiState.value = currentState.copy(pagingError = null)
+            updateSuccessState(
+                isLoadingNextPage = currentState.isLoadingNextPage,
+                hasNextPage = currentState.hasNextPage,
+                pagingError = null
+            )
         }
     }
 
@@ -192,9 +201,10 @@ class CharactersViewModel @Inject constructor(
         selectedCategory = category
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
-            _uiState.value = currentState.copy(
-                selectedCategory = category,
-                searchQuery = searchQuery
+            updateSuccessState(
+                isLoadingNextPage = currentState.isLoadingNextPage,
+                hasNextPage = currentState.hasNextPage,
+                pagingError = currentState.pagingError
             )
         }
     }
@@ -207,13 +217,37 @@ class CharactersViewModel @Inject constructor(
     private fun updateLoadingState() {
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
-            _uiState.value = currentState.copy(
+            updateSuccessState(
                 isLoadingNextPage = true,
-                selectedCategory = selectedCategory,
-                searchQuery = searchQuery
+                hasNextPage = currentState.hasNextPage,
+                pagingError = currentState.pagingError
             )
         }
-        // Si el estado es Loading (primera carga), no se modifica — ya está en Loading
+    }
+
+    /**
+     * Actualiza la UI con el estado Success, aplicando filtros locales si es necesario.
+     */
+    private fun updateSuccessState(
+        isLoadingNextPage: Boolean,
+        hasNextPage: Boolean,
+        pagingError: String? = null
+    ) {
+        val filtered = if (selectedCategory == null) {
+            allLoadedCharacters.toList()
+        } else {
+            allLoadedCharacters.filter { it.activeCategories().contains(selectedCategory) }
+        }
+
+        _uiState.value = CharactersUiState.Success(
+            characters = filtered,
+            favoriteIds = favoriteIds,
+            isLoadingNextPage = isLoadingNextPage,
+            hasNextPage = hasNextPage,
+            pagingError = pagingError,
+            selectedCategory = selectedCategory,
+            searchQuery = searchQuery
+        )
     }
 
     /**
@@ -221,23 +255,13 @@ class CharactersViewModel @Inject constructor(
      * nuevos a la lista existente y actualizando la señal de paginación.
      */
     private fun handleSuccess(paginatedResult: PaginatedResult<Character>) {
-        val currentState = _uiState.value
-        val existingCharacters = if (currentState is CharactersUiState.Success) {
-            currentState.characters
-        } else {
-            emptyList()
-        }
-
+        allLoadedCharacters.addAll(paginatedResult.items)
         hasNextPage = paginatedResult.hasNextPage
         currentPage++
 
-        _uiState.value = CharactersUiState.Success(
-            characters = existingCharacters + paginatedResult.items,
-            favoriteIds = favoriteIds,
+        updateSuccessState(
             isLoadingNextPage = false,
-            hasNextPage = paginatedResult.hasNextPage,
-            selectedCategory = selectedCategory,
-            searchQuery = searchQuery
+            hasNextPage = paginatedResult.hasNextPage
         )
     }
 
@@ -248,18 +272,17 @@ class CharactersViewModel @Inject constructor(
      */
     private fun handleError(error: Throwable) {
         val currentState = _uiState.value
-        // Si ya hay datos cargados, restaurar el estado previo sin el indicador de carga
+        val message = if (error is UnknownHostException) {
+            ERROR_MESSAGE_NO_INTERNET
+        } else {
+            ERROR_MESSAGE_GENERIC
+        }
+
         if (currentState is CharactersUiState.Success) {
-            val message = if (error is UnknownHostException) {
-                ERROR_MESSAGE_NO_INTERNET
-            } else {
-                ERROR_MESSAGE_GENERIC
-            }
-            _uiState.value = currentState.copy(
+            updateSuccessState(
                 isLoadingNextPage = false,
-                pagingError = message,
-                selectedCategory = selectedCategory,
-                searchQuery = searchQuery
+                hasNextPage = currentState.hasNextPage,
+                pagingError = message
             )
             return
         }
@@ -270,16 +293,14 @@ class CharactersViewModel @Inject constructor(
                 val localFavorites = observeFavoriteCharactersUseCase().first()
                 if (localFavorites.isNotEmpty()) {
                     hasNextPage = false
-                    _uiState.value = CharactersUiState.Success(
-                        characters = localFavorites,
-                        favoriteIds = localFavorites.map { it.id }.toSet(),
+                    allLoadedCharacters.clear()
+                    allLoadedCharacters.addAll(localFavorites)
+                    favoriteIds = localFavorites.map { it.id }.toSet()
+                    updateSuccessState(
                         isLoadingNextPage = false,
-                        hasNextPage = false,
-                        selectedCategory = selectedCategory,
-                        searchQuery = searchQuery
+                        hasNextPage = false
                     )
                 } else {
-                    // Si no hay favoritos locales, mostrar pantalla de error completa
                     showErrorState(error)
                 }
             } catch (fallbackError: Exception) {
