@@ -38,10 +38,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.characters.CharactersScreen
+import dev.leotoloza.aranguriappscodechallenge.presentation.characters.CharactersViewModel
 import dev.leotoloza.aranguriappscodechallenge.presentation.details.DetailsScreen
 import dev.leotoloza.aranguriappscodechallenge.presentation.favorites.FavoritesScreen
+import dev.leotoloza.aranguriappscodechallenge.presentation.splash.SplashScreen
 
 /**
  * Componible principal que gestiona la navegación de la aplicación DisneyApp.
@@ -55,25 +58,43 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.favorites.FavoritesS
 fun AppNavigation(
     modifier: Modifier = Modifier
 ) {
+    val charactersViewModel: CharactersViewModel = hiltViewModel()
+    var showSplash by remember { mutableStateOf(true) }
     var currentDestination by remember { mutableStateOf(BottomNavigation.CHARACTERS) }
     var selectedCharacter by remember { mutableStateOf<Character?>(null) }
     val charactersGridState = rememberLazyGridState()
 
-    AnimatedDetailsTransition(
-        selectedCharacter = selectedCharacter,
-        onBack = { selectedCharacter = null },
-        modifier = modifier
-    ) {
-        MainNavigationContent(
-            currentDestination = currentDestination,
-            onDestinationChanged = { destination ->
-                selectedCharacter = null
-                currentDestination = destination
-            },
-            onCharacterClick = { character -> selectedCharacter = character },
-            charactersGridState = charactersGridState,
-            modifier = modifier
-        )
+    AnimatedContent(
+        targetState = showSplash,
+        transitionSpec = {
+            fadeIn(animationSpec = tween(durationMillis = 500)) togetherWith
+                    fadeOut(animationSpec = tween(durationMillis = 500))
+        },
+        label = "splashTransition"
+    ) { isSplash ->
+        if (isSplash) {
+            SplashScreen(
+                onTimeout = { showSplash = false }
+            )
+        } else {
+            AnimatedDetailsTransition(
+                selectedCharacter = selectedCharacter,
+                onBack = { selectedCharacter = null },
+                modifier = modifier
+            ) {
+                MainNavigationContent(
+                    currentDestination = currentDestination,
+                    onDestinationChanged = { destination ->
+                        selectedCharacter = null
+                        currentDestination = destination
+                    },
+                    onCharacterClick = { character -> selectedCharacter = character },
+                    charactersGridState = charactersGridState,
+                    charactersViewModel = charactersViewModel,
+                    modifier = modifier
+                )
+            }
+        }
     }
 }
 
@@ -147,6 +168,7 @@ private fun AnimatedDetailsTransition(
  * @param onDestinationChanged Callback para actualizar el destino seleccionado.
  * @param onCharacterClick Callback ejecutado al seleccionar un personaje de la lista.
  * @param charactersGridState Estado de scroll de la grilla de personajes.
+ * @param charactersViewModel El ViewModel pre-instanciado para la pantalla de personajes.
  * @param modifier Modificador para el contenedor.
  */
 @Composable
@@ -155,6 +177,7 @@ private fun MainNavigationContent(
     onDestinationChanged: (BottomNavigation) -> Unit,
     onCharacterClick: (Character) -> Unit,
     charactersGridState: LazyGridState,
+    charactersViewModel: CharactersViewModel,
     modifier: Modifier = Modifier
 ) {
     // Configura el manejador de retroceso según la pantalla activa
@@ -196,7 +219,8 @@ private fun MainNavigationContent(
         AnimatedTabContent(
             currentDestination = currentDestination,
             charactersGridState = charactersGridState,
-            onCharacterClick = onCharacterClick
+            onCharacterClick = onCharacterClick,
+            charactersViewModel = charactersViewModel
         )
     }
 }
@@ -241,6 +265,7 @@ private fun NavigationSuiteItemLabel(
  * @param currentDestination Destino actual que se desea mostrar.
  * @param charactersGridState Estado de scroll de la grilla de personajes.
  * @param onCharacterClick Callback ejecutado al seleccionar un personaje.
+ * @param charactersViewModel El ViewModel pre-instanciado para la pantalla de personajes.
  * @param modifier Modificador para el contenedor.
  */
 @Composable
@@ -248,6 +273,7 @@ private fun AnimatedTabContent(
     currentDestination: BottomNavigation,
     charactersGridState: LazyGridState,
     onCharacterClick: (Character) -> Unit,
+    charactersViewModel: CharactersViewModel,
     modifier: Modifier = Modifier
 ) {
     AnimatedContent(
@@ -274,6 +300,7 @@ private fun AnimatedTabContent(
                 CharactersScreen(
                     gridState = charactersGridState,
                     onCharacterClick = onCharacterClick,
+                    viewModel = charactersViewModel,
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
