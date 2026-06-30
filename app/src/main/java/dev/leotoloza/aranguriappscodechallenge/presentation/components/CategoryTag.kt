@@ -13,32 +13,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.CategoryColor
 
 /**
- * Categorías de medios en los que puede aparecer un personaje de Disney.
- *
- * Cada entrada define la etiqueta de presentación (en español) que se muestra
- * en los tags de la UI. Los colores se resuelven en tiempo de composición
- * mediante [categoryColor].
- *
- * @property label Texto que se muestra en el tag de categoría.
+ * Obtiene la etiqueta amigable en español correspondiente para mostrar en el tag.
  */
-enum class CharacterCategory(val label: String) {
-    /** Cortometraje */
-    SHORT_FILM("Corto"),
-
-    /** Serie de televisión */
-    TV_SHOW("ShowTv"),
-
-    /** Videojuego */
-    VIDEO_GAME("Juego"),
-
-    /** Película */
-    FILM("Pelicula");
-}
+val CharacterCategory.label: String
+    get() = when (this) {
+        CharacterCategory.SHORT_FILM -> "Corto"
+        CharacterCategory.TV_SHOW -> "ShowTv"
+        CharacterCategory.VIDEO_GAME -> "Juego"
+        CharacterCategory.FILM -> "Pelicula"
+    }
 
 /**
  * Resuelve el par de colores del tema para esta categoría.
@@ -52,16 +40,6 @@ val CharacterCategory.categoryColor: CategoryColor
         CharacterCategory.FILM -> AppTheme.categoryColors.film
     }
 
-/**
- * Devuelve la lista de categorías activas (con al menos un ítem) para este personaje.
- * Solo incluye las categorías en las que el personaje tiene presencia real.
- */
-fun Character.activeCategories(): List<CharacterCategory> = buildList {
-    if (films.isNotEmpty()) add(CharacterCategory.FILM)
-    if (shortFilms.isNotEmpty()) add(CharacterCategory.SHORT_FILM)
-    if (tvShows.isNotEmpty()) add(CharacterCategory.TV_SHOW)
-    if (videoGames.isNotEmpty()) add(CharacterCategory.VIDEO_GAME)
-}
 
 /** Forma de píldora reutilizada para el tag de categoría. */
 private val PillShape = RoundedCornerShape(percent = 50)
