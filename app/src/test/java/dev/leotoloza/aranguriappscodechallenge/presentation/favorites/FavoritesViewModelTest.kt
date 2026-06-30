@@ -131,4 +131,96 @@ class FavoritesViewModelTest {
         // Then (Entonces se ejecuta el caso de uso)
         coVerify { toggleFavoriteUseCase(sampleCharacter) }
     }
+
+    /**
+     * Verifica que al buscar un término, la lista de favoritos expuesta en [FavoritesUiState.Success]
+     * se filtre correctamente sin modificar el origen de datos.
+     */
+    @Test
+    fun searchCharacters_filters_favorites_in_memory_correctly() = runTest {
+        // Given (Dado un flujo con múltiples personajes favoritos)
+        val mickey = sampleCharacter
+        val donald = Character(
+            id = 200,
+            name = "Donald Duck",
+            imageUrl = "http://donald.jpg",
+            url = "http://donald-api",
+            films = emptyList(),
+            shortFilms = emptyList(),
+            tvShows = emptyList(),
+            videoGames = emptyList()
+        )
+        val favoritesFlow = MutableStateFlow(listOf(mickey, donald))
+        coEvery { observeFavoriteCharactersUseCase() } returns favoritesFlow
+
+        val viewModel = FavoritesViewModel(observeFavoriteCharactersUseCase, toggleFavoriteUseCase)
+        advanceUntilIdle()
+
+        // When (Cuando se busca "Donald")
+        viewModel.searchCharacters("Donald")
+        advanceUntilIdle()
+
+        // Then (Entonces la lista filtrada solo contiene a Donald Duck)
+        val state = viewModel.uiState.value
+        assertTrue(state is FavoritesUiState.Success)
+        val successState = state as FavoritesUiState.Success
+        assertEquals(1, successState.characters.size)
+        assertEquals("Donald Duck", successState.characters[0].name)
+        assertEquals("Donald", successState.searchQuery)
+    }
+
+    /**
+     * Verifica que si ningún favorito coincide con la búsqueda, se emita un estado [FavoritesUiState.Success]
+     * con la lista de personajes vacía y la query correspondiente.
+     */
+    @Test
+    fun searchCharacters_emptyResult_emits_success_state_with_empty_list() = runTest {
+        // Given (Dado que hay favoritos en la lista)
+        val favoritesFlow = MutableStateFlow(listOf(sampleCharacter))
+        coEvery { observeFavoriteCharactersUseCase() } returns favoritesFlow
+
+        val viewModel = FavoritesViewModel(observeFavoriteCharactersUseCase, toggleFavoriteUseCase)
+        advanceUntilIdle()
+
+        // When (Cuando se busca un término que no coincide como "Goofy")
+        viewModel.searchCharacters("Goofy")
+        advanceUntilIdle()
+
+        // Then (Entonces el estado sigue siendo Success pero con lista vacía y query Goofy)
+        val state = viewModel.uiState.value
+        assertTrue(state is FavoritesUiState.Success)
+        val successState = state as FavoritesUiState.Success
+        assertTrue(successState.characters.isEmpty())
+        assertEquals("Goofy", successState.searchQuery)
+    }
+
+    /**
+     * Verifica que al limpiar la búsqueda de favoritos se vuelva a emitir la lista completa de favoritos.
+     */
+    @Test
+    fun clearSearch_restores_all_favorites() = runTest {
+        // Given (Dado que hay favoritos y una búsqueda activa que los filtra)
+        val favoritesFlow = MutableStateFlow(listOf(sampleCharacter))
+        coEvery { observeFavoriteCharactersUseCase() } returns favoritesFlow
+
+        val viewModel = FavoritesViewModel(observeFavoriteCharactersUseCase, toggleFavoriteUseCase)
+        advanceUntilIdle()
+
+        viewModel.searchCharacters("Goofy")
+        advanceUntilIdle()
+        
+        // Verificar que la lista esté vacía debido a la búsqueda
+        val successStateBefore = viewModel.uiState.value as FavoritesUiState.Success
+        assertTrue(successStateBefore.characters.isEmpty())
+
+        // When (Cuando se limpia la búsqueda)
+        viewModel.clearSearch()
+        advanceUntilIdle()
+
+        // Then (Entonces la lista de favoritos vuelve a mostrar todos los elementos originales)
+        val successStateAfter = viewModel.uiState.value as FavoritesUiState.Success
+        assertEquals(1, successStateAfter.characters.size)
+        assertEquals("Mickey Mouse", successStateAfter.characters[0].name)
+        assertEquals("", successStateAfter.searchQuery)
+    }
 }

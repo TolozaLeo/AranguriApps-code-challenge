@@ -1,5 +1,6 @@
 package dev.leotoloza.aranguriappscodechallenge.domain.usecase
 
+import javax.inject.Inject
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
 import dev.leotoloza.aranguriappscodechallenge.domain.repository.CharacterRepository
@@ -11,7 +12,7 @@ import dev.leotoloza.aranguriappscodechallenge.domain.repository.CharacterReposi
  *
  * @property repository Repositorio de personajes inyectado por la capa de inyección de dependencias.
  */
-class FilterCharactersUseCase(private val repository: CharacterRepository) {
+class FilterCharactersUseCase @Inject constructor(private val repository: CharacterRepository) {
 
     /**
      * Ejecuta la búsqueda/filtrado de personajes según el criterio indicado.

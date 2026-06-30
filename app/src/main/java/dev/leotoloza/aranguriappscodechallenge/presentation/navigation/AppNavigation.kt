@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -220,12 +221,12 @@ private fun NavigationSuiteItemLabel(
     ) {
         Icon(
             imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-            contentDescription = destination.title,
+            contentDescription = stringResource(destination.titleResId),
             tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = destination.title,
+            text = stringResource(destination.titleResId),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
+import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,7 +37,8 @@ class FavoritesViewModel @Inject constructor(
      */
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
-    private var selectedCategory: CharacterCategory? = null
+    private val selectedCategoryFlow = MutableStateFlow<CharacterCategory?>(null)
+    private val searchQueryFlow = MutableStateFlow("")
 
     init {
         observeFavorites()
@@ -58,27 +61,52 @@ class FavoritesViewModel @Inject constructor(
      * @param category Categoría de personajes por la que se desea filtrar, o `null` para mostrar todos.
      */
     fun selectCategory(category: CharacterCategory?) {
-        selectedCategory = category
-        val currentState = _uiState.value
-        if (currentState is FavoritesUiState.Success) {
-            _uiState.value = currentState.copy(selectedCategory = category)
-        }
+        selectedCategoryFlow.value = category
     }
 
     /**
-     * Inicia la observación reactiva del flujo de personajes favoritos.
+     * Establece la consulta de búsqueda para filtrar localmente la lista de favoritos por nombre.
+     *
+     * @param query Término de búsqueda.
+     */
+    fun searchCharacters(query: String) {
+        searchQueryFlow.value = query.trim()
+    }
+
+    /**
+     * Limpia la consulta de búsqueda activa para volver a mostrar todos los favoritos.
+     */
+    fun clearSearch() {
+        searchQueryFlow.value = ""
+    }
+
+    /**
+     * Inicia la observación reactiva del flujo de personajes favoritos combinando
+     * los filtros de categoría y de búsqueda por nombre.
      */
     private fun observeFavorites() {
         viewModelScope.launch {
-            observeFavoriteCharactersUseCase().collect { characters ->
+            combine(
+                observeFavoriteCharactersUseCase(),
+                selectedCategoryFlow,
+                searchQueryFlow
+            ) { characters, category, query ->
                 if (characters.isEmpty()) {
-                    _uiState.value = FavoritesUiState.Empty
+                    FavoritesUiState.Empty
                 } else {
-                    _uiState.value = FavoritesUiState.Success(
-                        characters = characters,
-                        selectedCategory = selectedCategory
+                    // Filtrar la lista local en memoria (100% libre de inyección de código/SQL)
+                    val filtered = characters
+                        .filter { category == null || it.activeCategories().contains(category) }
+                        .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
+
+                    FavoritesUiState.Success(
+                        characters = filtered,
+                        selectedCategory = category,
+                        searchQuery = query
                     )
                 }
+            }.collect { state ->
+                _uiState.value = state
             }
         }
     }

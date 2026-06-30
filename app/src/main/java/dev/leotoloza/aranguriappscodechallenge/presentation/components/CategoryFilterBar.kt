@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.CategoryColor
@@ -65,7 +67,7 @@ fun CategoryFilterBar(
             .background(backgroundColor)
     ) {
         Text(
-            text = "Filtrar por:",
+            text = stringResource(R.string.filter_by_appearance),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(
@@ -118,7 +120,7 @@ fun CategoryFilterBar(
             // Chip "Todos" al principio
             item {
                 FilterChipItem(
-                    text = "Todos",
+                    text = stringResource(R.string.category_all),
                     isSelected = selectedCategory == null,
                     onClick = { onCategorySelected(null) },
                     activeColor = CategoryColor(
@@ -132,7 +134,7 @@ fun CategoryFilterBar(
             items(
                 items = OrderedCategories, key = { category -> category.name }) { category ->
                 FilterChipItem(
-                    text = category.label,
+                    text = stringResource(category.labelResId),
                     isSelected = selectedCategory == category,
                     onClick = { onCategorySelected(category) },
                     activeColor = category.categoryColor

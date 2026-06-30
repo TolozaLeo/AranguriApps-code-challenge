@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
+import androidx.compose.ui.res.stringResource
+import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 
 /**
@@ -52,7 +54,7 @@ fun DisneyAsyncImage(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "Imagen no encontrada",
+                    contentDescription = stringResource(R.string.image_not_found_desc),
                     tint = AppTheme.colors.onPrimaryContainer,
                     modifier = Modifier.size(48.dp)
                 )
