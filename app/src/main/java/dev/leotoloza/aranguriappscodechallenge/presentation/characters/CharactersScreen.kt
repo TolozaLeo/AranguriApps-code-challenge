@@ -57,6 +57,9 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.components.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySearchBar
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.EmptyCategoryContent
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.EmptySearchContent
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.labelResId
 import androidx.compose.ui.res.stringResource
 import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
@@ -296,47 +299,67 @@ private fun SuccessContent(
         }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(340.dp),
-        state = gridState,
-        contentPadding = contentPadding,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = AppTheme.spacing.marginPage),
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
-    ) {
-        items(
-            items = filteredCharacters, key = { character -> character.id }) { character ->
-            val isFavorite = state.favoriteIds.contains(character.id)
-            CharacterCard(
-                character = character,
-                initialIsFavorite = isFavorite,
-                onFavoriteClick = { onFavoriteClick(character) },
-                onClick = { onCharacterClick(character) },
-                modifier = Modifier.animateItem(
-                    fadeInSpec = tween(durationMillis = 250),
-                    fadeOutSpec = tween(durationMillis = 300),
-                    placementSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                )
+    if (filteredCharacters.isEmpty()) {
+        val searchQuery = state.searchQuery
+        if (!searchQuery.isNullOrEmpty() && state.characters.isEmpty()) {
+            EmptySearchContent(
+                title = stringResource(R.string.empty_search_characters_title, searchQuery),
+                subtitle = stringResource(R.string.empty_search_characters_subtitle),
+                modifier = modifier
+            )
+        } else if (state.selectedCategory != null) {
+            EmptyCategoryContent(
+                title = stringResource(
+                    R.string.empty_characters_category_title,
+                    stringResource(state.selectedCategory.labelResId)
+                ),
+                subtitle = stringResource(R.string.empty_characters_category_subtitle),
+                modifier = modifier
             )
         }
-
-        // Indicador de paginación discreto al final del grid
-        if (state.isLoadingNextPage) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = AppTheme.spacing.stackMd),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = AppTheme.colors.primary, modifier = Modifier.size(24.dp)
+    } else {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(340.dp),
+            state = gridState,
+            contentPadding = contentPadding,
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = AppTheme.spacing.marginPage),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.gutter),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
+        ) {
+            items(
+                items = filteredCharacters, key = { character -> character.id }) { character ->
+                val isFavorite = state.favoriteIds.contains(character.id)
+                CharacterCard(
+                    character = character,
+                    initialIsFavorite = isFavorite,
+                    onFavoriteClick = { onFavoriteClick(character) },
+                    onClick = { onCharacterClick(character) },
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = tween(durationMillis = 250),
+                        fadeOutSpec = tween(durationMillis = 300),
+                        placementSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
                     )
+                )
+            }
+
+            // Indicador de paginación discreto al final del grid
+            if (state.isLoadingNextPage) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = AppTheme.spacing.stackMd),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = AppTheme.colors.primary, modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }

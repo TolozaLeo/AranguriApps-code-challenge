@@ -58,6 +58,8 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.components.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySearchBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.EmptyCategoryContent
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.EmptySearchContent
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.labelResId
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
@@ -163,12 +165,17 @@ fun FavoritesScreen(
                 if (state.characters.isEmpty()) {
                     if (state.searchQuery.isNotEmpty()) {
                         EmptySearchContent(
-                            query = state.searchQuery,
+                            title = stringResource(R.string.empty_search_favorites_title, state.searchQuery),
+                            subtitle = stringResource(R.string.empty_search_favorites_subtitle),
                             modifier = Modifier.weight(1f)
                         )
                     } else {
                         EmptyCategoryContent(
-                            categoryLabel = state.selectedCategory?.labelResId?.let { stringResource(it) }.orEmpty(),
+                            title = stringResource(
+                                R.string.empty_favorites_category_title,
+                                state.selectedCategory?.labelResId?.let { stringResource(it) }.orEmpty()
+                            ),
+                            subtitle = stringResource(R.string.empty_favorites_category_subtitle),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -293,69 +300,6 @@ private fun SuccessContent(
                         stiffness = Spring.StiffnessLow
                     )
                 )
-            )
-        }
-    }
-}
-
-/**
- * Contenido mostrado cuando existen favoritos agregados pero ninguno coincide con la categoría del filtro.
- */
-@Composable
-private fun EmptyCategoryContent(
-    categoryLabel: String, modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.empty_favorites_category_title, categoryLabel),
-                style = MaterialTheme.typography.titleMedium,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.empty_favorites_category_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-/**
- * Contenido mostrado cuando la búsqueda de favoritos no arroja resultados.
- */
-@Composable
-private fun EmptySearchContent(
-    query: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.empty_search_favorites_title, query),
-                style = MaterialTheme.typography.titleMedium,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.empty_search_favorites_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
-                textAlign = TextAlign.Center
             )
         }
     }
