@@ -65,8 +65,7 @@ class CharactersViewModel @Inject constructor(
                 val currentState = _uiState.value
                 if (currentState is CharactersUiState.Success) {
                     _uiState.value = currentState.copy(
-                        favoriteIds = ids,
-                        selectedCategory = selectedCategory
+                        favoriteIds = ids, selectedCategory = selectedCategory
                     )
                 }
             }
@@ -100,11 +99,9 @@ class CharactersViewModel @Inject constructor(
         updateLoadingState()
 
         viewModelScope.launch {
-            getCharactersUseCase(currentPage)
-                .onSuccess { paginatedResult ->
+            getCharactersUseCase(currentPage).onSuccess { paginatedResult ->
                     handleSuccess(paginatedResult)
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     handleError(error)
                 }
             isLoadingPage = false
@@ -156,8 +153,7 @@ class CharactersViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
             _uiState.value = currentState.copy(
-                isLoadingNextPage = true,
-                selectedCategory = selectedCategory
+                isLoadingNextPage = true, selectedCategory = selectedCategory
             )
         }
         // Si el estado es Loading (primera carga), no se modifica — ya está en Loading
@@ -252,7 +248,6 @@ class CharactersViewModel @Inject constructor(
             "Sin conexión a internet, revisa tu conexión y vuelve a intentarlo"
 
         /** Mensaje de error genérico para fallos del servidor. */
-        const val ERROR_MESSAGE_GENERIC =
-            "Error al cargar, inténtelo de nuevo más tarde"
+        const val ERROR_MESSAGE_GENERIC = "Error al cargar, inténtelo de nuevo más tarde"
     }
 }

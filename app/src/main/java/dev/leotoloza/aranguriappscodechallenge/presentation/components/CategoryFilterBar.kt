@@ -14,10 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,10 +56,13 @@ fun CategoryFilterBar(
     onCategorySelected: (CharacterCategory?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lazyListState = rememberLazyListState()
+    val backgroundColor = MaterialTheme.colorScheme.background
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(backgroundColor)
     ) {
         Text(
             text = "Filtrar por:",
@@ -68,11 +75,44 @@ fun CategoryFilterBar(
             )
         )
         LazyRow(
-            modifier = Modifier.fillMaxWidth(),
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawWithContent {
+                    // Dibuja primero el contenido del LazyRow
+                    drawContent()
+
+                    val fadeWidth = 24.dp.toPx()
+
+                    // Degradado a la izquierda si se puede deslizar hacia atrás
+                    if (lazyListState.canScrollBackward) {
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(backgroundColor, Color.Transparent),
+                                startX = 0f,
+                                endX = fadeWidth
+                            ),
+                            topLeft = Offset.Zero,
+                            size = androidx.compose.ui.geometry.Size(fadeWidth, size.height)
+                        )
+                    }
+
+                    // Degradado a la derecha si se puede deslizar hacia adelante
+                    if (lazyListState.canScrollForward) {
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(Color.Transparent, backgroundColor),
+                                startX = size.width - fadeWidth,
+                                endX = size.width
+                            ),
+                            topLeft = Offset(size.width - fadeWidth, 0f),
+                            size = androidx.compose.ui.geometry.Size(fadeWidth, size.height)
+                        )
+                    }
+                },
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackSm),
             contentPadding = PaddingValues(
-                horizontal = AppTheme.spacing.marginPage,
-                vertical = AppTheme.spacing.stackSm
+                horizontal = AppTheme.spacing.marginPage, vertical = AppTheme.spacing.stackSm
             )
         ) {
             // Chip "Todos" al principio
@@ -90,9 +130,7 @@ fun CategoryFilterBar(
 
             // Chips de cada categoría ordenados
             items(
-                items = OrderedCategories,
-                key = { category -> category.name }
-            ) { category ->
+                items = OrderedCategories, key = { category -> category.name }) { category ->
                 FilterChipItem(
                     text = category.label,
                     isSelected = selectedCategory == category,
@@ -116,10 +154,7 @@ fun CategoryFilterBar(
  */
 @Composable
 private fun FilterChipItem(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    activeColor: CategoryColor
+    text: String, isSelected: Boolean, onClick: () -> Unit, activeColor: CategoryColor
 ) {
     // Definimos los colores inactivos por defecto
     val inactiveBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -146,7 +181,9 @@ private fun FilterChipItem(
             .background(color = backgroundColor)
             .border(
                 width = 1.dp,
-                color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant.copy(
+                    alpha = 0.4f
+                ),
                 shape = pillShape
             )
             .clickable(onClick = onClick)

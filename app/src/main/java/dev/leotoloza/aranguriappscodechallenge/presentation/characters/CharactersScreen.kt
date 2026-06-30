@@ -1,5 +1,13 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +40,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,6 +82,24 @@ fun CharactersScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val state = uiState
+    var isFilterBarVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(gridState) {
+        var previousIndex = 0
+        var previousScrollOffset = 0
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }.collect { (currentIndex, currentOffset) ->
+                if (currentIndex == 0 && currentOffset == 0) {
+                    isFilterBarVisible = true
+                } else if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
+                    isFilterBarVisible = false // Deslizando hacia abajo
+                } else if (currentIndex < previousIndex || (currentOffset < previousScrollOffset)) {
+                    isFilterBarVisible = true // Deslizando hacia arriba
+                }
+                previousIndex = currentIndex
+                previousScrollOffset = currentOffset
+            }
+    }
+
     if (state is CharactersUiState.Success) {
         val pagingError = state.pagingError
         LaunchedEffect(pagingError) {
@@ -88,19 +117,15 @@ fun CharactersScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            DisneyTopAppBar(
-                titleText = "Personajes", scrollBehavior = scrollBehavior
-            )
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                DisneySnackbar(snackbarData = data)
-            }
+    Scaffold(modifier = modifier, topBar = {
+        DisneyTopAppBar(
+            titleText = "Personajes", scrollBehavior = scrollBehavior
+        )
+    }, snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState) { data ->
+            DisneySnackbar(snackbarData = data)
         }
-    ) { innerPadding ->
+    }) { innerPadding ->
         when (state) {
             is CharactersUiState.Loading -> {
                 LoadingContent(modifier = Modifier.padding(innerPadding))
@@ -120,10 +145,16 @@ fun CharactersScreen(
                         .fillMaxSize()
                         .padding(top = innerPadding.calculateTopPadding())
                 ) {
-                    CategoryFilterBar(
-                        selectedCategory = state.selectedCategory,
-                        onCategorySelected = viewModel::selectCategory
-                    )
+                    AnimatedVisibility(
+                        visible = isFilterBarVisible,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        CategoryFilterBar(
+                            selectedCategory = state.selectedCategory,
+                            onCategorySelected = viewModel::selectCategory
+                        )
+                    }
                     SuccessContent(
                         state = state,
                         gridState = gridState,
@@ -148,8 +179,7 @@ fun CharactersScreen(
 @Composable
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
             color = AppTheme.colors.primary
@@ -166,13 +196,10 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
  */
 @Composable
 private fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    message: String, onRetry: () -> Unit, modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -215,8 +242,8 @@ private fun SuccessContent(
     // Detección de scroll infinito: dispara la carga cuando el usuario se acerca al final
     val shouldLoadMore by remember {
         derivedStateOf {
-            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()
-                ?: return@derivedStateOf false
+            val lastVisibleItem =
+                gridState.layoutInfo.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf false
             val totalItems = gridState.layoutInfo.totalItemsCount
             lastVisibleItem.index >= totalItems - LOAD_MORE_THRESHOLD
         }
@@ -250,15 +277,21 @@ private fun SuccessContent(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
     ) {
         items(
-            items = filteredCharacters,
-            key = { character -> character.id }
-        ) { character ->
+            items = filteredCharacters, key = { character -> character.id }) { character ->
             val isFavorite = state.favoriteIds.contains(character.id)
             CharacterCard(
                 character = character,
                 initialIsFavorite = isFavorite,
                 onFavoriteClick = { onFavoriteClick(character) },
-                onClick = { onCharacterClick(character) }
+                onClick = { onCharacterClick(character) },
+                modifier = Modifier.animateItem(
+                    fadeInSpec = tween(durationMillis = 250),
+                    fadeOutSpec = tween(durationMillis = 300),
+                    placementSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
             )
         }
 
@@ -272,8 +305,7 @@ private fun SuccessContent(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = AppTheme.colors.primary,
-                        modifier = Modifier.size(24.dp)
+                        color = AppTheme.colors.primary, modifier = Modifier.size(24.dp)
                     )
                 }
             }

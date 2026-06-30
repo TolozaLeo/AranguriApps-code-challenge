@@ -1,8 +1,13 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.favorites
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -30,8 +37,12 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,21 +78,34 @@ fun FavoritesScreen(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val gridState = rememberLazyGridState()
+    var isFilterBarVisible by remember { mutableStateOf(true) }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            DisneyTopAppBar(
-                titleText = "Favoritos",
-                scrollBehavior = scrollBehavior
-            )
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                DisneySnackbar(snackbarData = data)
+    LaunchedEffect(gridState) {
+        var previousIndex = 0
+        var previousScrollOffset = 0
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }.collect { (currentIndex, currentOffset) ->
+                if (currentIndex == 0 && currentOffset == 0) {
+                    isFilterBarVisible = true
+                } else if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
+                    isFilterBarVisible = false // Deslizando hacia abajo
+                } else if (currentIndex < previousIndex || (currentOffset < previousScrollOffset)) {
+                    isFilterBarVisible = true // Deslizando hacia arriba
+                }
+                previousIndex = currentIndex
+                previousScrollOffset = currentOffset
             }
+    }
+
+    Scaffold(modifier = modifier, topBar = {
+        DisneyTopAppBar(
+            titleText = "Favoritos", scrollBehavior = scrollBehavior
+        )
+    }, snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState) { data ->
+            DisneySnackbar(snackbarData = data)
         }
-    ) { innerPadding ->
+    }) { innerPadding ->
         when (val state = uiState) {
             is FavoritesUiState.Loading -> {
                 LoadingContent(modifier = Modifier.padding(innerPadding))
@@ -97,10 +121,16 @@ fun FavoritesScreen(
                         .fillMaxSize()
                         .padding(top = innerPadding.calculateTopPadding())
                 ) {
-                    CategoryFilterBar(
-                        selectedCategory = state.selectedCategory,
-                        onCategorySelected = viewModel::selectCategory
-                    )
+                    AnimatedVisibility(
+                        visible = isFilterBarVisible,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        CategoryFilterBar(
+                            selectedCategory = state.selectedCategory,
+                            onCategorySelected = viewModel::selectCategory
+                        )
+                    }
 
                     val filteredCharacters = remember(state.characters, state.selectedCategory) {
                         val category = state.selectedCategory
@@ -121,6 +151,7 @@ fun FavoritesScreen(
                     } else {
                         SuccessContent(
                             characters = filteredCharacters,
+                            gridState = gridState,
                             onCharacterClick = onCharacterClick,
                             onFavoriteClick = { character ->
                                 viewModel.toggleFavorite(character)
@@ -154,8 +185,7 @@ fun FavoritesScreen(
 @Composable
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
             color = AppTheme.colors.primary
@@ -169,12 +199,10 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 @Composable
 private fun EmptyContent(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
+            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.FavoriteBorder,
@@ -207,6 +235,7 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
 @Composable
 private fun SuccessContent(
     characters: List<Character>,
+    gridState: LazyGridState,
     onCharacterClick: (Character) -> Unit,
     onFavoriteClick: (Character) -> Unit,
     modifier: Modifier = Modifier,
@@ -214,6 +243,7 @@ private fun SuccessContent(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(340.dp),
+        state = gridState,
         contentPadding = contentPadding,
         modifier = modifier
             .fillMaxSize()
@@ -222,9 +252,7 @@ private fun SuccessContent(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
     ) {
         items(
-            items = characters,
-            key = { character -> character.id }
-        ) { character ->
+            items = characters, key = { character -> character.id }) { character ->
             CharacterCard(
                 character = character,
                 initialIsFavorite = true,
@@ -248,16 +276,13 @@ private fun SuccessContent(
  */
 @Composable
 private fun EmptyCategoryContent(
-    categoryLabel: String,
-    modifier: Modifier = Modifier
+    categoryLabel: String, modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
+            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)
         ) {
             Text(
                 text = "No tienes favoritos en la categoría \"$categoryLabel\"",
