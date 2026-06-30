@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
@@ -46,6 +47,7 @@ class CharactersViewModel @Inject constructor(
     private var hasNextPage = true
     private var isLoadingPage = false
     private var favoriteIds: Set<Int> = emptySet()
+    private var selectedCategory: CharacterCategory? = null
 
     init {
         loadNextPage()
@@ -62,7 +64,9 @@ class CharactersViewModel @Inject constructor(
                 favoriteIds = ids
                 val currentState = _uiState.value
                 if (currentState is CharactersUiState.Success) {
-                    _uiState.value = currentState.copy(favoriteIds = ids)
+                    _uiState.value = currentState.copy(
+                        favoriteIds = ids, selectedCategory = selectedCategory
+                    )
                 }
             }
         }
@@ -95,11 +99,9 @@ class CharactersViewModel @Inject constructor(
         updateLoadingState()
 
         viewModelScope.launch {
-            getCharactersUseCase(currentPage)
-                .onSuccess { paginatedResult ->
+            getCharactersUseCase(currentPage).onSuccess { paginatedResult ->
                     handleSuccess(paginatedResult)
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     handleError(error)
                 }
             isLoadingPage = false
@@ -130,6 +132,19 @@ class CharactersViewModel @Inject constructor(
     }
 
     /**
+     * Actualiza la categoría seleccionada para filtrar visualmente los personajes en la UI.
+     *
+     * @param category Categoría de personajes por la que se desea filtrar, o `null` para mostrar todos.
+     */
+    fun selectCategory(category: CharacterCategory?) {
+        selectedCategory = category
+        val currentState = _uiState.value
+        if (currentState is CharactersUiState.Success) {
+            _uiState.value = currentState.copy(selectedCategory = category)
+        }
+    }
+
+    /**
      * Actualiza el estado a cargando según si ya hay datos previos o no.
      * Si ya hay datos, muestra el indicador discreto al final del grid.
      * Si es la primera carga, muestra el indicador centrado a pantalla completa.
@@ -137,7 +152,9 @@ class CharactersViewModel @Inject constructor(
     private fun updateLoadingState() {
         val currentState = _uiState.value
         if (currentState is CharactersUiState.Success) {
-            _uiState.value = currentState.copy(isLoadingNextPage = true)
+            _uiState.value = currentState.copy(
+                isLoadingNextPage = true, selectedCategory = selectedCategory
+            )
         }
         // Si el estado es Loading (primera carga), no se modifica — ya está en Loading
     }
@@ -161,7 +178,8 @@ class CharactersViewModel @Inject constructor(
             characters = existingCharacters + paginatedResult.items,
             favoriteIds = favoriteIds,
             isLoadingNextPage = false,
-            hasNextPage = paginatedResult.hasNextPage
+            hasNextPage = paginatedResult.hasNextPage,
+            selectedCategory = selectedCategory
         )
     }
 
@@ -181,7 +199,8 @@ class CharactersViewModel @Inject constructor(
             }
             _uiState.value = currentState.copy(
                 isLoadingNextPage = false,
-                pagingError = message
+                pagingError = message,
+                selectedCategory = selectedCategory
             )
             return
         }
@@ -196,7 +215,8 @@ class CharactersViewModel @Inject constructor(
                         characters = localFavorites,
                         favoriteIds = localFavorites.map { it.id }.toSet(),
                         isLoadingNextPage = false,
-                        hasNextPage = false
+                        hasNextPage = false,
+                        selectedCategory = selectedCategory
                     )
                 } else {
                     // Si no hay favoritos locales, mostrar pantalla de error completa
@@ -228,7 +248,6 @@ class CharactersViewModel @Inject constructor(
             "Sin conexión a internet, revisa tu conexión y vuelve a intentarlo"
 
         /** Mensaje de error genérico para fallos del servidor. */
-        const val ERROR_MESSAGE_GENERIC =
-            "Error al cargar, inténtelo de nuevo más tarde"
+        const val ERROR_MESSAGE_GENERIC = "Error al cargar, inténtelo de nuevo más tarde"
     }
 }

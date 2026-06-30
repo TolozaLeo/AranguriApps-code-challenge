@@ -1,19 +1,27 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.favorites
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -29,8 +37,12 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +51,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
+import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.CategoryFilterBar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.CharacterCard
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneySnackbar
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.DisneyTopAppBar
+import dev.leotoloza.aranguriappscodechallenge.presentation.components.label
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
 import kotlinx.coroutines.launch
 
@@ -63,21 +78,34 @@ fun FavoritesScreen(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val gridState = rememberLazyGridState()
+    var isFilterBarVisible by remember { mutableStateOf(true) }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            DisneyTopAppBar(
-                titleText = "Favoritos",
-                scrollBehavior = scrollBehavior
-            )
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                DisneySnackbar(snackbarData = data)
+    LaunchedEffect(gridState) {
+        var previousIndex = 0
+        var previousScrollOffset = 0
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }.collect { (currentIndex, currentOffset) ->
+                if (currentIndex == 0 && currentOffset == 0) {
+                    isFilterBarVisible = true
+                } else if (currentIndex > previousIndex || (currentIndex == previousIndex && currentOffset > previousScrollOffset)) {
+                    isFilterBarVisible = false // Deslizando hacia abajo
+                } else if (currentIndex < previousIndex || (currentOffset < previousScrollOffset)) {
+                    isFilterBarVisible = true // Deslizando hacia arriba
+                }
+                previousIndex = currentIndex
+                previousScrollOffset = currentOffset
             }
+    }
+
+    Scaffold(modifier = modifier, topBar = {
+        DisneyTopAppBar(
+            titleText = "Favoritos", scrollBehavior = scrollBehavior
+        )
+    }, snackbarHost = {
+        SnackbarHost(hostState = snackbarHostState) { data ->
+            DisneySnackbar(snackbarData = data)
         }
-    ) { innerPadding ->
+    }) { innerPadding ->
         when (val state = uiState) {
             is FavoritesUiState.Loading -> {
                 LoadingContent(modifier = Modifier.padding(innerPadding))
@@ -88,25 +116,64 @@ fun FavoritesScreen(
             }
 
             is FavoritesUiState.Success -> {
-                SuccessContent(
-                    characters = state.characters,
-                    onCharacterClick = onCharacterClick,
-                    onFavoriteClick = { character ->
-                        viewModel.toggleFavorite(character)
-                        scope.launch {
-                            snackbarHostState.currentSnackbarData?.dismiss()
-                            val result = snackbarHostState.showSnackbar(
-                                message = "${character.name} eliminado de favoritos",
-                                actionLabel = "Deshacer",
-                                duration = SnackbarDuration.Short
-                            )
-                            if (result == SnackbarResult.ActionPerformed) {
-                                viewModel.toggleFavorite(character)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = innerPadding.calculateTopPadding())
+                ) {
+                    AnimatedVisibility(
+                        visible = isFilterBarVisible,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        CategoryFilterBar(
+                            selectedCategory = state.selectedCategory,
+                            onCategorySelected = viewModel::selectCategory
+                        )
+                    }
+
+                    val filteredCharacters = remember(state.characters, state.selectedCategory) {
+                        val category = state.selectedCategory
+                        if (category == null) {
+                            state.characters
+                        } else {
+                            state.characters.filter { character ->
+                                character.activeCategories().contains(category)
                             }
                         }
-                    },
-                    modifier = Modifier.padding(innerPadding)
-                )
+                    }
+
+                    if (filteredCharacters.isEmpty()) {
+                        EmptyCategoryContent(
+                            categoryLabel = state.selectedCategory?.label.orEmpty(),
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        SuccessContent(
+                            characters = filteredCharacters,
+                            gridState = gridState,
+                            onCharacterClick = onCharacterClick,
+                            onFavoriteClick = { character ->
+                                viewModel.toggleFavorite(character)
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "${character.name} eliminado de favoritos",
+                                        actionLabel = "Deshacer",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.toggleFavorite(character)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(
+                                bottom = innerPadding.calculateBottomPadding()
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -118,8 +185,7 @@ fun FavoritesScreen(
 @Composable
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
             color = AppTheme.colors.primary
@@ -133,12 +199,10 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 @Composable
 private fun EmptyContent(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
+            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.FavoriteBorder,
@@ -171,12 +235,16 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
 @Composable
 private fun SuccessContent(
     characters: List<Character>,
+    gridState: LazyGridState,
     onCharacterClick: (Character) -> Unit,
     onFavoriteClick: (Character) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(340.dp),
+        state = gridState,
+        contentPadding = contentPadding,
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = AppTheme.spacing.marginPage),
@@ -184,9 +252,7 @@ private fun SuccessContent(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackMd)
     ) {
         items(
-            items = characters,
-            key = { character -> character.id }
-        ) { character ->
+            items = characters, key = { character -> character.id }) { character ->
             CharacterCard(
                 character = character,
                 initialIsFavorite = true,
@@ -200,6 +266,36 @@ private fun SuccessContent(
                         stiffness = Spring.StiffnessLow
                     )
                 )
+            )
+        }
+    }
+}
+
+/**
+ * Contenido mostrado cuando existen favoritos agregados pero ninguno coincide con la categoría del filtro.
+ */
+@Composable
+private fun EmptyCategoryContent(
+    categoryLabel: String, modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)
+        ) {
+            Text(
+                text = "No tienes favoritos en la categoría \"$categoryLabel\"",
+                style = MaterialTheme.typography.titleMedium,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Prueba seleccionando otra categoría o marcando más personajes favoritos",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.4f),
+                textAlign = TextAlign.Center
             )
         }
     }
