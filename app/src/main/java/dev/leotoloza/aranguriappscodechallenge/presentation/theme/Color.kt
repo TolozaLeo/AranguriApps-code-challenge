@@ -54,18 +54,15 @@ val DisneyCelestialBlue = Color(0xFF238EC1) // Alias for convenience
 // Text locked charcoal color (design.md line 109)
 val CharcoalText = Color(0xFF1A1A1A)
 
-// Category colors (Base / Glow pairs)
-val CategoryFilmBase = Color(0xFF6200EE)
-val CategoryFilmGlow = Color(0xFFD0BCFF)
+// Colores de categoría (pares Fondo Pastel / Texto Oscuro) para accesibilidad y alto contraste
+val CategoryShortBg = Color(0xFFE8F8DD)
+val CategoryShortText = Color(0xFF2C5E0D)
 
-val CategoryTvBase = Color(0xFF00C853)
-val CategoryTvGlow = Color(0xFFB9F6CA)
+val CategoryTvBg = Color(0xFFFDF0DF)
+val CategoryTvText = Color(0xFF6F3C00)
 
-val CategoryShortBase = Color(0xFFFFD600)
-val CategoryShortGlow = Color(0xFFFFE57F)
+val CategoryGameBg = Color(0xFFF9E6FC)
+val CategoryGameText = Color(0xFF660A74)
 
-val CategoryGameBase = Color(0xFFFF3D00)
-val CategoryGameGlow = Color(0xFFFF9E80)
-
-val CategoryParkBase = Color(0xFF00B8D4)
-val CategoryParkGlow = Color(0xFFA7FFEB)
+val CategoryFilmBg = Color(0xFFE3EFF5)
+val CategoryFilmText = Color(0xFF0F3B50)

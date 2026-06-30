@@ -27,6 +27,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
@@ -83,13 +89,27 @@ fun DetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
-            // Imagen de portada del personaje de ancho completo usando el componente de imagen común
+            // Imagen de portada del personaje de ancho completo usando el componente de imagen común con efecto de desvanecimiento
             DisneyAsyncImage(
                 imageUrl = character.imageUrl,
                 contentDescription = "Imagen de ${character.name}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
+                    // Renderiza la imagen en una capa offscreen para poder aplicar la máscara de transparencia
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .drawWithContent {
+                        drawContent()
+                        // Aplica un degradado vertical que va desde opaco (arriba) a transparente (abajo)
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Black, Color.Transparent),
+                                startY = size.height * 0.7f,
+                                endY = size.height
+                            ),
+                            blendMode = BlendMode.DstIn
+                        )
+                    }
             )
 
             Spacer(modifier = Modifier.height(AppTheme.spacing.stackMd))

@@ -256,7 +256,7 @@ private fun SuccessContent(
 
 /**
  * Umbral de ítems restantes antes del final de la lista para disparar la carga
- * de la siguiente página. Un valor de 5 proporciona una experiencia fluida de
+ * de la siguiente página. Un valor de 10 proporciona una experiencia fluida de
  * scroll infinito sin que el usuario perciba la carga.
  */
-private const val LOAD_MORE_THRESHOLD = 5
+private const val LOAD_MORE_THRESHOLD = 10
