@@ -63,6 +63,7 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.components.labelResI
 import androidx.compose.ui.res.stringResource
 import dev.leotoloza.aranguriappscodechallenge.R
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.DisneyCelestialBlue
 
 /**
  * Pantalla que muestra el listado adaptativo de personajes de Disney con scroll infinito.
@@ -334,6 +335,7 @@ private fun SuccessContent(
                 CharacterCard(
                     character = character,
                     initialIsFavorite = isFavorite,
+                    borderColor = DisneyCelestialBlue.copy(alpha = 0.25f),
                     onFavoriteClick = { onFavoriteClick(character) },
                     onClick = { onCharacterClick(character) },
                     modifier = Modifier.animateItem(

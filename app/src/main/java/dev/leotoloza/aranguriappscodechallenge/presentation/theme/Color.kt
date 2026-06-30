@@ -66,3 +66,14 @@ val CategoryGameText = Color(0xFF660A74)
 
 val CategoryFilmBg = Color(0xFFE3EFF5)
 val CategoryFilmText = Color(0xFF0F3B50)
+
+/**
+ * Color coral cálido premium utilizado como acento visual para diferenciar la sección
+ * de favoritos y para el botón de favoritos (corazón) seleccionado.
+ */
+val FavoriteCoral = Color(0xFFFA5F55)
+
+/**
+ * Color de fondo o contenedor suave asociado al acento coral de favoritos.
+ */
+val FavoriteCoralContainer = Color(0xFFFFDAD6)

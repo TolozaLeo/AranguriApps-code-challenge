@@ -62,6 +62,9 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.components.EmptyCate
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.EmptySearchContent
 import dev.leotoloza.aranguriappscodechallenge.presentation.components.labelResId
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.FavoriteCoral
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.CategoryColor
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 
 /**
@@ -157,7 +160,11 @@ fun FavoritesScreen(
                         )
                         CategoryFilterBar(
                             selectedCategory = state.selectedCategory,
-                            onCategorySelected = viewModel::selectCategory
+                            onCategorySelected = viewModel::selectCategory,
+                            allCategoryActiveColor = CategoryColor(
+                                background = FavoriteCoral,
+                                text = Color.White
+                            )
                         )
                     }
                 }
@@ -222,7 +229,7 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
-            color = AppTheme.colors.primary
+            color = FavoriteCoral
         )
     }
 }
@@ -241,7 +248,7 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
             Icon(
                 imageVector = Icons.Default.FavoriteBorder,
                 contentDescription = null,
-                tint = AppTheme.colors.primary.copy(alpha = 0.4f),
+                tint = FavoriteCoral.copy(alpha = 0.4f),
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -290,6 +297,7 @@ private fun SuccessContent(
             CharacterCard(
                 character = character,
                 initialIsFavorite = true,
+                borderColor = FavoriteCoral.copy(alpha = 0.35f),
                 onFavoriteClick = { onFavoriteClick(character) },
                 onClick = { onCharacterClick(character) },
                 modifier = Modifier.animateItem(

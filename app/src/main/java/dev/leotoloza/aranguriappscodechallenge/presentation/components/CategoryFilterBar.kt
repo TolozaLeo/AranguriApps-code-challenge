@@ -51,12 +51,17 @@ private val OrderedCategories = listOf(
  * @param selectedCategory Categoría seleccionada actualmente, o `null` si está seleccionado "Todos".
  * @param onCategorySelected Callback invocado cuando se selecciona una nueva categoría.
  * @param modifier Modificador para aplicar al contenedor.
+ * @param allCategoryActiveColor Color del chip de la categoría "Todos" cuando está activo.
  */
 @Composable
 fun CategoryFilterBar(
     selectedCategory: CharacterCategory?,
     onCategorySelected: (CharacterCategory?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    allCategoryActiveColor: CategoryColor = CategoryColor(
+        background = MaterialTheme.colorScheme.primary,
+        text = MaterialTheme.colorScheme.onPrimary
+    )
 ) {
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -123,10 +128,7 @@ fun CategoryFilterBar(
                     text = stringResource(R.string.category_all),
                     isSelected = selectedCategory == null,
                     onClick = { onCategorySelected(null) },
-                    activeColor = CategoryColor(
-                        background = MaterialTheme.colorScheme.primary,
-                        text = MaterialTheme.colorScheme.onPrimary
-                    )
+                    activeColor = allCategoryActiveColor
                 )
             }
 
