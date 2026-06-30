@@ -31,22 +31,21 @@ data class AppSpacing(
 )
 
 /**
- * Representa el par de color base y glow para una categoría (design.md line 99)
+ * Representa el par de color fondo y texto para una categoría (design.md line 99)
  */
 data class CategoryColor(
-    val base: Color,
-    val glow: Color
+    val background: Color,
+    val text: Color
 )
 
 /**
  * Contiene los colores temáticos de las categorías de personajes de la aplicación (design.md line 99)
  */
 data class AppCategoryColors(
-    val film: CategoryColor = CategoryColor(CategoryFilmBase, CategoryFilmGlow),
-    val tvShow: CategoryColor = CategoryColor(CategoryTvBase, CategoryTvGlow),
-    val shortFilm: CategoryColor = CategoryColor(CategoryShortBase, CategoryShortGlow),
-    val videoGame: CategoryColor = CategoryColor(CategoryGameBase, CategoryGameGlow),
-    val parkAttraction: CategoryColor = CategoryColor(CategoryParkBase, CategoryParkGlow)
+    val film: CategoryColor = CategoryColor(CategoryFilmBg, CategoryFilmText),
+    val tvShow: CategoryColor = CategoryColor(CategoryTvBg, CategoryTvText),
+    val shortFilm: CategoryColor = CategoryColor(CategoryShortBg, CategoryShortText),
+    val videoGame: CategoryColor = CategoryColor(CategoryGameBg, CategoryGameText)
 )
 
 // Provisiones locales para CompositionLocal
@@ -127,7 +126,7 @@ fun AranguriAppsCodeChallengeTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor -> {
             val context = LocalContext.current
             dynamicLightColorScheme(context)
         }

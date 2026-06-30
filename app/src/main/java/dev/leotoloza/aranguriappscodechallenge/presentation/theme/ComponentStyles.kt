@@ -31,8 +31,4 @@ object AppStyles {
         shape(appShapes.medium)
         background(colors.surfaceVariant)
     }
-
-    val tagBaseStyle = Style {
-        // Border and glow will be applied later
-    }
 }

@@ -3,11 +3,15 @@ package dev.leotoloza.aranguriappscodechallenge.presentation.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,10 +19,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
-import androidx.compose.foundation.style.styleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,8 +36,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
@@ -59,7 +65,6 @@ fun CharacterCard(
     onClick: () -> Unit = {}
 ) {
     var isFavorite by remember(initialIsFavorite) { mutableStateOf(initialIsFavorite) }
-    val interactionSource = remember { MutableInteractionSource() }
 
     // Animación de escala elástica (bouncy spring) para el efecto "pop" al interactuar
     val scale by animateFloatAsState(
@@ -68,60 +73,88 @@ fun CharacterCard(
         ), label = "FavoriteButtonScale"
     )
 
-    Row(
+    ElevatedCard(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(12.dp),
-                clip = false
-            )
-            .styleable(null, AppTheme.styles.characterCardStyle)
-            .clickable { onClick() }
-            .padding(AppTheme.spacing.stackMd),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Imagen del personaje usando componente reutilizable
-        DisneyAsyncImage(
-            imageUrl = character.imageUrl,
-            contentDescription = "Imagen de ${character.name}",
-            modifier = Modifier
-                .size(100.dp)
-                .clip(RoundedCornerShape(8.dp))
+            .height(120.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = AppTheme.colors.surfaceVariant
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 2.dp
         )
-        Spacer(modifier = Modifier.width(AppTheme.spacing.stackMd))
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = character.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = AppTheme.colors.onSurface
-            )
-            Spacer(modifier = Modifier.height(AppTheme.spacing.stackSm))
-            // TODO: Reemplazar por etiquetas de categoría reales (FlowRow con tags glow)
-            Text(
-                text = "Category", style = MaterialTheme.typography.labelSmall
-            )
-        }
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Imagen del personaje ocupando el total del alto de la card y siendo cuadrada
+                DisneyAsyncImage(
+                    imageUrl = character.imageUrl,
+                    contentDescription = "Imagen de ${character.name}",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
+                )
+                Spacer(modifier = Modifier.width(AppTheme.spacing.stackMd))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = AppTheme.spacing.stackSm)
+                        .padding(end = 40.dp) // Evita que nombres largos colisionen con el corazón
+                ) {
+                    Text(
+                        text = character.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppTheme.colors.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.stackSm))
+                    // Tags de categoría según las categorías activas del personaje
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackSm),
+                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.stackSm),
+                        maxLines = 2
+                    ) {
+                        character.activeCategories().forEach { category ->
+                            CategoryTag(
+                                text = category.label,
+                                colors = category.categoryColor
+                            )
+                        }
+                    }
+                }
+            }
 
-        // Botón de favoritos responsivo e interactivo usando iconos de la librería Material
-        IconButton(onClick = {
-            isFavorite = !isFavorite
-            onFavoriteClick?.invoke(isFavorite)
-        }, modifier = Modifier.graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-        }) {
-            Icon(
-                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
-                tint = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
-                    alpha = 0.6f
-                ),
-                modifier = Modifier.size(28.dp)
-            )
+            // Botón de favoritos flotante en la esquina superior derecha de la tarjeta
+            IconButton(
+                onClick = {
+                    isFavorite = !isFavorite
+                    onFavoriteClick?.invoke(isFavorite)
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                    tint = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
+                        alpha = 0.6f
+                    ),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
