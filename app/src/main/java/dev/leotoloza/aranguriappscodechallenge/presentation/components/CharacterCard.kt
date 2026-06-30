@@ -21,8 +21,8 @@ import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,9 +41,13 @@ import androidx.compose.ui.res.stringResource
 import dev.leotoloza.aranguriappscodechallenge.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Color
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.activeCategories
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.FavoriteCoral
 
 /**
  * Tarjeta reutilizable que representa de forma visual a un personaje de Disney.
@@ -54,6 +58,8 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.theme.AppTheme
  * @param character Modelo de dominio del personaje a representar.
  * @param modifier Modificador para aplicar a la tarjeta.
  * @param initialIsFavorite Estado inicial de favoritos del personaje.
+ * @param borderColor Color del borde de la tarjeta. Por defecto es transparente.
+ * @param borderWidth Ancho/grosor del borde de la tarjeta. Por defecto es 1.dp.
  * @param onFavoriteClick Callback que se ejecuta al presionar el botón de favoritos. Recibe el nuevo estado.
  * @param onClick Callback que se ejecuta al presionar o hacer clic en la tarjeta.
  */
@@ -63,6 +69,8 @@ fun CharacterCard(
     character: Character,
     modifier: Modifier = Modifier,
     initialIsFavorite: Boolean = false,
+    borderColor: Color = Color.Transparent,
+    borderWidth: Dp = 1.dp,
     onFavoriteClick: ((Boolean) -> Unit)? = null,
     onClick: () -> Unit = {}
 ) {
@@ -75,16 +83,17 @@ fun CharacterCard(
         ), label = "FavoriteButtonScale"
     )
 
-    ElevatedCard(
+    Card(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
+        border = if (borderColor != Color.Transparent) BorderStroke(borderWidth, borderColor) else null,
+        colors = CardDefaults.cardColors(
             containerColor = AppTheme.colors.surfaceVariant
         ),
-        elevation = CardDefaults.elevatedCardElevation(
+        elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         )
     ) {
@@ -151,7 +160,7 @@ fun CharacterCard(
                 Icon(
                     imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = stringResource(if (isFavorite) R.string.remove_favorite_desc else R.string.add_favorite_desc),
-                    tint = if (isFavorite) AppTheme.colors.primary else AppTheme.colors.onSurface.copy(
+                    tint = if (isFavorite) FavoriteCoral else AppTheme.colors.onSurface.copy(
                         alpha = 0.6f
                     ),
                     modifier = Modifier.size(24.dp)

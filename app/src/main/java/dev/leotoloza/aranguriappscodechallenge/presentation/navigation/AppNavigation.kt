@@ -34,6 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.FavoriteCoral
+import dev.leotoloza.aranguriappscodechallenge.presentation.theme.FavoriteCoralContainer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -192,7 +195,8 @@ private fun MainNavigationContent(
         }
     }
 
-    val customItemColors = rememberNavigationSuiteItemColors()
+    val charactersItemColors = rememberNavigationSuiteItemColors(isFavorites = false)
+    val favoritesItemColors = rememberNavigationSuiteItemColors(isFavorites = true)
 
     NavigationSuiteScaffold(
         modifier = modifier,
@@ -204,15 +208,19 @@ private fun MainNavigationContent(
         navigationSuiteItems = {
             BottomNavigation.entries.forEach { destination ->
                 val isSelected = currentDestination == destination
+                val isFavorites = destination == BottomNavigation.FAVORITES
+                val itemColors = if (isFavorites) favoritesItemColors else charactersItemColors
                 item(
                     selected = isSelected,
                     onClick = { onDestinationChanged(destination) },
                     icon = {
                         NavigationSuiteItemLabel(
-                            destination = destination, isSelected = isSelected
+                            destination = destination,
+                            isSelected = isSelected,
+                            selectedColor = if (isFavorites) FavoriteCoral else MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     },
-                    colors = customItemColors
+                    colors = itemColors
                 )
             }
         }) {
@@ -231,10 +239,14 @@ private fun MainNavigationContent(
  * @param destination Destino de navegación representado por el item.
  * @param isSelected Define si la pestaña asociada está activa.
  * @param modifier Modificador para aplicar al contenedor.
+ * @param selectedColor Color utilizado para el icono y el texto cuando la pestaña está seleccionada.
  */
 @Composable
 private fun NavigationSuiteItemLabel(
-    destination: BottomNavigation, isSelected: Boolean, modifier: Modifier = Modifier
+    destination: BottomNavigation,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    selectedColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
     Column(
         modifier = modifier
@@ -246,7 +258,7 @@ private fun NavigationSuiteItemLabel(
         Icon(
             imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
             contentDescription = stringResource(destination.titleResId),
-            tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+            tint = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -254,7 +266,7 @@ private fun NavigationSuiteItemLabel(
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -322,20 +334,21 @@ private fun AnimatedTabContent(
 /**
  * Inicializa y memoriza los colores configurados para los elementos activos/inactivos del menú de navegación.
  *
+ * @param isFavorites Define si se están configurando los colores para el ítem de favoritos.
  * @return Los colores para los componentes de barra y riel de la suite de navegación.
  */
 @Composable
-private fun rememberNavigationSuiteItemColors() = NavigationSuiteDefaults.itemColors(
+private fun rememberNavigationSuiteItemColors(isFavorites: Boolean) = NavigationSuiteDefaults.itemColors(
     navigationBarItemColors = NavigationBarItemDefaults.colors(
-        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-        selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        indicatorColor = if (isFavorites) FavoriteCoralContainer else MaterialTheme.colorScheme.secondaryContainer,
+        selectedIconColor = if (isFavorites) FavoriteCoral else MaterialTheme.colorScheme.onSecondaryContainer,
+        selectedTextColor = if (isFavorites) FavoriteCoral else MaterialTheme.colorScheme.onSecondaryContainer,
         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     ), navigationRailItemColors = NavigationRailItemDefaults.colors(
-        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-        selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        indicatorColor = if (isFavorites) FavoriteCoralContainer else MaterialTheme.colorScheme.secondaryContainer,
+        selectedIconColor = if (isFavorites) FavoriteCoral else MaterialTheme.colorScheme.onSecondaryContainer,
+        selectedTextColor = if (isFavorites) FavoriteCoral else MaterialTheme.colorScheme.onSecondaryContainer,
         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
