@@ -97,12 +97,18 @@ fun CharactersScreen(
         mutableStateOf(activeQuery)
     }
 
+    var hasLoadedOnce by remember { mutableStateOf(false) }
+    if (state is CharactersUiState.Success) {
+        hasLoadedOnce = true
+    }
+
     DisneyListScaffold(
         titleText = stringResource(R.string.characters_title),
         gridState = gridState,
         snackbarHostState = snackbarHostState,
-        showFilters = state is CharactersUiState.Success,
+        showFilters = hasLoadedOnce,
         searchQuery = localQuery,
+        showSearchButton = localQuery.trim() != activeQuery.trim(),
         onQueryChanged = setLocalQuery,
         onSearchTriggered = viewModel::searchCharacters,
         onClearClicked = {

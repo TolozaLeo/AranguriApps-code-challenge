@@ -32,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -84,6 +83,7 @@ fun FavoritesScreen(
         snackbarHostState = snackbarHostState,
         showFilters = state is FavoritesUiState.Success,
         searchQuery = localQuery,
+        showSearchButton = localQuery.trim() != activeQuery.trim(),
         onQueryChanged = setLocalQuery,
         onSearchTriggered = viewModel::searchCharacters,
         onClearClicked = {

@@ -46,7 +46,8 @@ fun DisneySearchBar(
     onSearchTriggered: (String) -> Unit,
     onClearClicked: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = stringResource(R.string.search_placeholder)
+    placeholder: String = stringResource(R.string.search_placeholder),
+    showSearchButton: Boolean = true
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -89,18 +90,20 @@ fun DisneySearchBar(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(
-                        onClick = {
-                            onSearchTriggered(query.trim())
-                            keyboardController?.hide()
-                        },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = stringResource(R.string.search_action_desc),
-                            tint = DisneyCelestialBlue
-                        )
+                    if (showSearchButton) {
+                        IconButton(
+                            onClick = {
+                                onSearchTriggered(query.trim())
+                                keyboardController?.hide()
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = stringResource(R.string.search_action_desc),
+                                tint = DisneyCelestialBlue
+                            )
+                        }
                     }
                 }
             }

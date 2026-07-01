@@ -48,6 +48,7 @@ fun DisneyListScaffold(
     modifier: Modifier = Modifier,
     showFilters: Boolean = false,
     searchQuery: String = "",
+    showSearchButton: Boolean = true,
     onQueryChanged: (String) -> Unit = {},
     onSearchTriggered: (String) -> Unit = {},
     onClearClicked: () -> Unit = {},
@@ -93,7 +94,8 @@ fun DisneyListScaffold(
                             query = searchQuery,
                             onQueryChanged = onQueryChanged,
                             onSearchTriggered = onSearchTriggered,
-                            onClearClicked = onClearClicked
+                            onClearClicked = onClearClicked,
+                            showSearchButton = showSearchButton
                         )
                         if (allCategoryActiveColor != null) {
                             CategoryFilterBar(
