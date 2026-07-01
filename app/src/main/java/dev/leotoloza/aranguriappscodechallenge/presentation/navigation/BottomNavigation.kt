@@ -1,12 +1,19 @@
 package dev.leotoloza.aranguriappscodechallenge.presentation.navigation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.leotoloza.aranguriappscodechallenge.R
+
+/**
+ * Representa los diferentes tipos de recursos para un icono.
+ */
+sealed class IconResource {
+    data class Vector(val imageVector: ImageVector) : IconResource()
+    data class Drawable(@param:DrawableRes val id: Int) : IconResource()
+}
 
 /**
  * Representa los destinos de la navegación inferior/adaptativa en la aplicación.
@@ -19,16 +26,26 @@ import dev.leotoloza.aranguriappscodechallenge.R
 enum class BottomNavigation(
     val route: String,
     val titleResId: Int,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val selectedIcon: IconResource,
+    val unselectedIcon: IconResource
 ) {
     /**
      * Pantalla que muestra el listado de personajes de Disney.
      */
-    CHARACTERS("characters", R.string.characters_title, Icons.Default.Person, Icons.Outlined.Person),
+    CHARACTERS(
+        route = "characters",
+        titleResId = R.string.characters_title,
+        selectedIcon = IconResource.Drawable(R.drawable.ic_characters_selected),
+        unselectedIcon = IconResource.Drawable(R.drawable.ic_characters_unselected)
+    ),
 
     /**
      * Pantalla que muestra los personajes favoritos del usuario.
      */
-    FAVORITES("favorites", R.string.favorites_title, Icons.Default.Favorite, Icons.Default.FavoriteBorder)
+    FAVORITES(
+        route = "favorites",
+        titleResId = R.string.favorites_title,
+        selectedIcon = IconResource.Vector(Icons.Default.Favorite),
+        unselectedIcon = IconResource.Vector(Icons.Default.FavoriteBorder)
+    )
 }
