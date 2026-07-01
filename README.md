@@ -2,14 +2,15 @@
 
 ## Tabla de Contenidos
 - [Descripción General](#descripción-general)
-- [Características y Funcionalidades](#-características-y-funcionalidades)
-- [Diseño de Interfaz (UI/UX) y Concepto Visual](#-diseño-de-interfaz-uiux-y-concepto-visual)
-- [Arquitectura y Decisiones de Ingeniería](#-arquitectura-y-decisiones-de-ingeniería)
-- [Tecnologías Utilizadas](#-tecnologías-utilizadas)
-- [Estrategia de Testing](#-estrategia-de-testing)
-- [Instalación y Configuración](#-instalación-y-configuración)
-- [Desarrollo Asistido por Inteligencia Artificial (IA)](#-desarrollo-asistido-por-inteligencia-artificial-ia)
-- [Versionado y Flujo de Trabajo (GitFlow)](#-versionado-y-flujo-de-trabajo-gitflow)
+- [Características y Funcionalidades](#características-y-funcionalidades)
+- [Diseño de Interfaz (UI/UX) y Concepto Visual](#diseño-de-interfaz-uiux-y-concepto-visual)
+- [Capturas de pantalla](#capturas-de-pantalla)
+- [Arquitectura y Decisiones de Ingeniería](#arquitectura-y-decisiones-de-ingeniería)
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Estrategia de Testing](#estrategia-de-testing)
+- [Instalación y Configuración](#instalación-y-configuración)
+- [Desarrollo Asistido por Inteligencia Artificial (IA)](#desarrollo-asistido-por-inteligencia-artificial-ia)
+- [Versionado y Flujo de Trabajo (GitFlow)](#versionado-y-flujo-de-trabajo-gitflow)
 
 ---
 
@@ -37,8 +38,6 @@ Se seleccionó específicamente la API de Disney para este proyecto debido a las
 - **Volumen y Calidad de Datos**: Cuenta con una cantidad sustancial de registros (personajes, películas, juegos) ideal para implementar patrones como la paginación y el renderizado adaptativo.
 - **Filtrado Integrado**: Su capacidad nativa para refinar resultados (por nombre, película, videojuego, etc.) resulta perfecta para demostrar cómo diseño de manera robusta la integración de estos parámetros de red con una interfaz reactiva.
 - **Sencillez Arquitectónica**: Su estructura JSON plana y sin complicaciones me permite evidenciar con mayor claridad mi proceso desde cero a la hora de modelar datos y construir la aplicación.
-
----
 
 ## Características y Funcionalidades
 
@@ -91,6 +90,33 @@ El diseño visual de DisneyApp, denominado **"Magic Archives"**, está estructur
 - **Ambiente de Alto Contraste**: El fondo de la aplicación es blanco puro (`#FFFFFF`) con tarjetas en tonos grises muy suaves. Esto proporciona un entorno limpio que permite que las ilustraciones de los personajes (que suelen ser extremadamente coloridas) se conviertan en las auténticas protagonistas visuales.
 - **Accesibilidad Visual**: Los chips de categorías utilizan combinaciones personalizadas de fondos pastel muy suaves con texto muy oscuro del mismo matiz cromático (por ejemplo, verde pastel y texto verde oscuro para cortometrajes). Esto asegura el cumplimiento de las pautas de accesibilidad en contraste visual (alto contraste) y facilita su distinción de un solo vistazo.
 - **Tipografía**: Se utiliza la fuente geométrica **Plus Jakarta Sans** con un sistema jerárquico estricto y un color de texto gris carbón oscuro (`#1A1A1A`), el cual reduce la fatiga visual en comparación con el negro puro.
+
+---
+
+## Capturas de pantalla
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" valign="bottom">
+        <b>Home</b><br/><br/>
+        <img width="180" alt="Screenshot_personajes" src="https://github.com/user-attachments/assets/d8a3d917-66c6-43af-a16b-312fe084ab54" />
+      </td>
+      <td align="center" valign="bottom">
+        <b>Buscador</b><br/><br/>
+        <img width="180" alt="Screenshot_buscador" src="https://github.com/user-attachments/assets/d31c1653-5f6e-4eeb-8cf7-60724a999578" />
+      </td>
+      <td align="center" valign="bottom">
+        <b>Favoritos</b><br/><br/>
+        <img width="180" alt="Screenshot_favoritos" src="https://github.com/user-attachments/assets/fb3a01ec-59a8-471c-b72d-1058fe943eef" />
+      </td>
+      <td align="center" valign="bottom">
+        <b>Detalle de personaje</b><br/><br/>
+        <img width="180" alt="Screenshot_detalle" src="https://github.com/user-attachments/assets/3922edec-1d70-484c-9951-fbf07034d740" />
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
