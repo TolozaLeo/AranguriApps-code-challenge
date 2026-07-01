@@ -3,6 +3,7 @@ package dev.leotoloza.aranguriappscodechallenge.presentation.characters
 import dev.leotoloza.aranguriappscodechallenge.domain.model.Character
 import dev.leotoloza.aranguriappscodechallenge.domain.model.PaginatedResult
 import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterFilter
+import dev.leotoloza.aranguriappscodechallenge.domain.model.CharacterCategory
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.GetCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteCharactersUseCase
 import dev.leotoloza.aranguriappscodechallenge.domain.usecase.ObserveFavoriteIdsUseCase
@@ -620,6 +621,72 @@ class CharactersViewModelTest {
         val state = viewModel.uiState.value as CharactersUiState.Success
         assertEquals(1, state.characters.size)
         assertEquals(SECOND_CHARACTER_NAME, state.characters[0].name)
-        assertEquals(null, state.searchQuery)
+        assertEquals("", state.searchQuery)
+    }
+
+    /**
+     * Verifica que al seleccionar una categoría, los personajes expuestos en [CharactersUiState.Success]
+     * se filtren correctamente en memoria en el ViewModel.
+     */
+    @Test
+    fun selectCategory_filters_characters_in_memory_correctly() = runTest {
+        // Given (Dado que la primera página retorna dos personajes de diferentes categorías)
+        val paginatedResult = PaginatedResult(
+            items = listOf(firstPageCharacter, secondPageCharacter),
+            hasNextPage = false
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // When (Cuando se selecciona la categoría FILM)
+        viewModel.selectCategory(CharacterCategory.FILM)
+        advanceUntilIdle()
+
+        // Then (Entonces la lista filtrada solo contiene a firstPageCharacter)
+        val state = viewModel.uiState.value
+        assertTrue(state is CharactersUiState.Success)
+        val successState = state as CharactersUiState.Success
+        assertEquals(1, successState.characters.size)
+        assertEquals(FIRST_CHARACTER_NAME, successState.characters[0].name)
+        assertEquals(CharacterCategory.FILM, successState.selectedCategory)
+    }
+
+    /**
+     * Verifica que al seleccionar null como categoría, se vuelvan a mostrar todos los personajes cargados.
+     */
+    @Test
+    fun selectCategory_restores_all_characters_when_null() = runTest {
+        val paginatedResult = PaginatedResult(
+            items = listOf(firstPageCharacter, secondPageCharacter),
+            hasNextPage = false
+        )
+        coEvery { getCharactersUseCase(FIRST_PAGE) } returns Result.success(paginatedResult)
+
+        val viewModel = CharactersViewModel(
+            getCharactersUseCase,
+            observeFavoriteIdsUseCase,
+            toggleFavoriteUseCase,
+            observeFavoriteCharactersUseCase,
+            filterCharactersUseCase
+        )
+        advanceUntilIdle()
+
+        // Seleccionar categoría y luego limpiarla
+        viewModel.selectCategory(CharacterCategory.FILM)
+        advanceUntilIdle()
+        viewModel.selectCategory(null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as CharactersUiState.Success
+        assertEquals(2, state.characters.size)
+        assertEquals(null, state.selectedCategory)
     }
 }

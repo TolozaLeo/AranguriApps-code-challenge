@@ -31,13 +31,7 @@ interface CharacterRepository {
      */
     suspend fun filterCharacters(filter: CharacterFilter, page: Int = 1): Result<List<Character>>
 
-    /**
-     * Obtiene el detalle completo de un personaje específico.
-     *
-     * @param id Identificador único del personaje.
-     * @return [Result] con el [Character] encontrado, o error si no existe.
-     */
-    suspend fun getCharacterById(id: Int): Result<Character>
+
 
     /**
      * Obtiene el flujo reactivo de la lista de personajes marcados como favoritos.

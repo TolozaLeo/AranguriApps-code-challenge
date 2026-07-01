@@ -6,11 +6,11 @@
     <string name="category_tv_show">ShowTv</string>
     <string name="category_video_game">Juego</string>
     <string name="category_film">Pelicula</string>
-    <string name="search_placeholder">Buscar personaje...</string>
+    <string name="search_placeholder">Buscar personaje Disney...</string>
     <string name="clear_search_desc">Limpiar búsqueda</string>
     <string name="search_action_desc">Buscar</string>
     <string name="retry_button">Reintentar</string>
-    <string name="characters_title">Personajes</string>
+    <string name="characters_title">Explorar personajes</string>
     <string name="favorites_title">Favoritos</string>
     <string name="character_removed_from_favorites">%1$s eliminado de favoritos</string>
     <string name="undo_action">Deshacer</string>

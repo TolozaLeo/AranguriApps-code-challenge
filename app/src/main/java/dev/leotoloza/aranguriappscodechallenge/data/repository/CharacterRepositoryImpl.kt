@@ -58,23 +58,7 @@ class CharacterRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCharacterById(id: Int): Result<Character> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiService.getCharacterById(id)
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body?.data != null) {
-                    Result.success(body.data.toDomain())
-                } else {
-                    Result.failure(Exception("Personaje no encontrado"))
-                }
-            } else {
-                Result.failure(Exception("Error al obtener detalle: ${response.code()} ${response.message()}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+
 
     override fun getFavoriteCharacters(): Flow<List<Character>> {
         return characterDao.observeFavoriteCharacters().map { entities ->

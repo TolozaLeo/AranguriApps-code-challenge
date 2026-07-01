@@ -3,7 +3,6 @@ package dev.leotoloza.aranguriappscodechallenge.data.repository
 import dev.leotoloza.aranguriappscodechallenge.data.local.dao.CharacterDao
 import dev.leotoloza.aranguriappscodechallenge.data.local.entity.CharacterEntity
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterDto
-import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharacterResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.CharactersListResponseDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.dto.InfoDto
 import dev.leotoloza.aranguriappscodechallenge.data.network.service.DisneyApiService
@@ -201,70 +200,6 @@ class CharacterRepositoryImplTest {
         assertTrue(result.isFailure)
     }
 
-    /**
-     * Verifica que [CharacterRepositoryImpl.getCharacterById] retorne el personaje correspondiente
-     * de forma exitosa.
-     */
-    @Test
-    fun getCharacterById_success_returns_character() = runTest {
-        // Given (Dado que la API retorna un personaje específico por ID)
-        val responseDto = CharacterResponseDto(
-            info = mockInfoDto,
-            data = mockCharacterDto
-        )
-        coEvery {
-            apiService.getCharacterById(TEST_ID)
-        } returns Response.success(responseDto)
-
-        // When (Cuando se busca por ID)
-        val result = repository.getCharacterById(TEST_ID)
-
-        // Then (Entonces el resultado contiene el personaje correspondiente)
-        assertTrue(result.isSuccess)
-        val character = result.getOrThrow()
-        assertEquals(TEST_ID, character.id)
-        assertEquals(TEST_NAME, character.name)
-    }
-
-    /**
-     * Verifica que [CharacterRepositoryImpl.getCharacterById] retorne un error cuando
-     * el cuerpo de la respuesta sea nulo (no encontrado).
-     */
-    @Test
-    fun getCharacterById_nullBody_returns_failure() = runTest {
-        // Given (Dado que la API responde con éxito pero con un cuerpo nulo)
-        coEvery {
-            apiService.getCharacterById(TEST_ID)
-        } returns Response.success(null)
-
-        // When (Cuando se busca por ID)
-        val result = repository.getCharacterById(TEST_ID)
-
-        // Then (Entonces se retorna una excepción indicando que no se encontró)
-        assertTrue(result.isFailure)
-        val exception = result.exceptionOrNull()
-        assertEquals(ERROR_MESSAGE_NOT_FOUND, exception?.message)
-    }
-
-    /**
-     * Verifica que [CharacterRepositoryImpl.getCharacterById] retorne un fallo cuando
-     * ocurre una excepción de red al buscar el ID.
-     */
-    @Test
-    fun getCharacterById_networkException_returns_failure() = runTest {
-        // Given (Dado una excepción de red)
-        coEvery {
-            apiService.getCharacterById(TEST_ID)
-        } throws IOException(ERROR_MESSAGE_API)
-
-        // When (Cuando se consulta por ID)
-        val result = repository.getCharacterById(TEST_ID)
-
-        // Then (Entonces retorna fallo con la excepción correspondiente)
-        assertTrue(result.isFailure)
-        val exception = result.exceptionOrNull()
-        assertEquals(ERROR_MESSAGE_API, exception?.message)
-    }
 
     /**
      * Verifica que [CharacterRepositoryImpl.getFavoriteCharacters] retorne los personajes del DAO.

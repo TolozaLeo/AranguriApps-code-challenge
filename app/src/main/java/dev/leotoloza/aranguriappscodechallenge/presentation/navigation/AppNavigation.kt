@@ -31,6 +31,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.SaverScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +53,39 @@ import dev.leotoloza.aranguriappscodechallenge.presentation.favorites.FavoritesS
 import dev.leotoloza.aranguriappscodechallenge.presentation.splash.SplashScreen
 
 /**
+ * Saver para serializar/deserializar objetos Character? en el guardado de estado de Compose.
+ */
+private val CharacterSaver = object : Saver<Character?, Any> {
+    override fun SaverScope.save(value: Character?): Any? {
+        return if (value == null) null
+        else mapOf(
+            "id" to value.id,
+            "name" to value.name,
+            "imageUrl" to value.imageUrl,
+            "url" to value.url,
+            "films" to ArrayList(value.films),
+            "shortFilms" to ArrayList(value.shortFilms),
+            "tvShows" to ArrayList(value.tvShows),
+            "videoGames" to ArrayList(value.videoGames)
+        )
+    }
+
+    override fun restore(value: Any): Character? {
+        val map = value as? Map<*, *> ?: return null
+        return Character(
+            id = map["id"] as Int,
+            name = map["name"] as String,
+            imageUrl = map["imageUrl"] as String,
+            url = map["url"] as String,
+            films = (map["films"] as List<*>).filterIsInstance<String>(),
+            shortFilms = (map["shortFilms"] as List<*>).filterIsInstance<String>(),
+            tvShows = (map["tvShows"] as List<*>).filterIsInstance<String>(),
+            videoGames = (map["videoGames"] as List<*>).filterIsInstance<String>()
+        )
+    }
+}
+
+/**
  * Componible principal que gestiona la navegación de la aplicación DisneyApp.
  *
  * Coordina los estados y delega el flujo de renderizado y transiciones a sub-componentes
@@ -62,9 +98,9 @@ fun AppNavigation(
     modifier: Modifier = Modifier
 ) {
     val charactersViewModel: CharactersViewModel = hiltViewModel()
-    var showSplash by remember { mutableStateOf(true) }
-    var currentDestination by remember { mutableStateOf(BottomNavigation.CHARACTERS) }
-    var selectedCharacter by remember { mutableStateOf<Character?>(null) }
+    var showSplash by rememberSaveable { mutableStateOf(true) }
+    var currentDestination by rememberSaveable { mutableStateOf(BottomNavigation.CHARACTERS) }
+    var selectedCharacter by rememberSaveable(stateSaver = CharacterSaver) { mutableStateOf<Character?>(null) }
     val charactersGridState = rememberLazyGridState()
 
     AnimatedContent(
