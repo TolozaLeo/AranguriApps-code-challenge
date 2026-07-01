@@ -120,6 +120,30 @@ El diseño visual de DisneyApp, denominado **"Magic Archives"**, está estructur
 
 ---
 
+## Instalación y Configuración
+
+### Instalación directa en dispositivo móvil:
+[![Descargar APK](https://img.shields.io/badge/Descargar-APK%20de%20la%20Prueba%20Técnica-007ACC?style=for-the-badge&logo=android&logoColor=white)](https://github.com/TolozaLeo/AranguriApps-code-challenge/releases/download/v1.0.1/app-release.apk)
+
+
+ O sigue estos pasos para compilar y ejecutar el proyecto localmente en tu máquina:
+
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/TolozaLeo/AranguriApps-code-challenge.git
+   ```
+2. **Abrir en Android Studio**:
+   Abre Android Studio (se recomienda la última versión estable) y selecciona la opción "Open" para importar el directorio raíz del proyecto.
+3. **Conexión de red**:
+   Asegúrate de contar con conexión a internet para la descarga inicial de las dependencias definidas en el catálogo Gradle (`libs.versions.toml`).
+4. **Ejecutar la aplicación**:
+   Conecta un dispositivo físico Android (con depuración USB habilitada) o inicia un emulador (con API mínima 31 o superior) y presiona el botón **Run** (`Shift + F10`) en Android Studio.
+
+> [!NOTE]
+> Dado que la API pública de Disney no requiere autenticación ni tokens, **no es necesario** configurar claves privadas en el archivo `local.properties`. La aplicación iniciará y descargará los datos remotos de inmediato.
+
+---
+
 ## Arquitectura y Decisiones de Ingeniería
 
 El proyecto está diseñado bajo los principios de **Clean Architecture** estructurado en capas junto con el patrón **MVVM (Model-View-ViewModel)**.
@@ -163,26 +187,6 @@ El proyecto cuenta con una sólida base de pruebas unitarias enfocada en garanti
 - **Pruebas de Casos de Uso (`UseCases`)**: Pruebas unitarias que aseguran la correcta orquestación de la lógica del negocio (ej. `ToggleFavoriteUseCaseTest`, `GetCharactersUseCaseTest`, etc.).
 - **Pruebas de Repositorio (`CharacterRepositoryImplTest`)**: Verifican que la capa de datos filtre correctamente y sincronice de manera adecuada entre el backend remoto de la API y la persistencia local de la base de datos de Room.
 - **Pruebas de Mapeo (`CharacterMapperTest`)**: Validan la correcta transformación de objetos de red (DTOs) a las entidades internas del dominio de negocio.
-
----
-
-## Instalación y Configuración
-
-Sigue estos pasos para compilar y ejecutar el proyecto localmente en tu máquina:
-
-1. **Clonar el repositorio**:
-   ```bash
-   git clone https://github.com/TolozaLeo/AranguriApps-code-challenge.git
-   ```
-2. **Abrir en Android Studio**:
-   Abre Android Studio (se recomienda la última versión estable) y selecciona la opción "Open" para importar el directorio raíz del proyecto.
-3. **Conexión de red**:
-   Asegúrate de contar con conexión a internet para la descarga inicial de las dependencias definidas en el catálogo Gradle (`libs.versions.toml`).
-4. **Ejecutar la aplicación**:
-   Conecta un dispositivo físico Android (con depuración USB habilitada) o inicia un emulador (con API mínima 31 o superior) y presiona el botón **Run** (`Shift + F10`) en Android Studio.
-
-> [!NOTE]
-> Dado que la API pública de Disney no requiere autenticación ni tokens, **no es necesario** configurar claves privadas en el archivo `local.properties`. La aplicación iniciará y descargará los datos remotos de inmediato.
 
 ---
 
