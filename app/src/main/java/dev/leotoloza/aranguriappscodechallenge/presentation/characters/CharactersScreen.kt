@@ -103,7 +103,7 @@ fun CharactersScreen(
     }
 
     DisneyListScaffold(
-        titleText = stringResource(R.string.characters_title),
+        titleText = stringResource(R.string.characters_topbar),
         gridState = gridState,
         snackbarHostState = snackbarHostState,
         showFilters = hasLoadedOnce,

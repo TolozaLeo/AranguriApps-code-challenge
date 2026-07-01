@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -29,7 +30,6 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.FavoriteCoral
 import dev.leotoloza.aranguriappscodechallenge.presentation.theme.FavoriteCoralContainer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -291,11 +292,27 @@ private fun NavigationSuiteItemLabel(
             .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
-            contentDescription = stringResource(destination.titleResId),
-            tint = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        val iconRes = if (isSelected) destination.selectedIcon else destination.unselectedIcon
+        val iconTint = if (isSelected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
+        
+        when (iconRes) {
+            is IconResource.Vector -> {
+                Icon(
+                    imageVector = iconRes.imageVector,
+                    contentDescription = stringResource(destination.titleResId),
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            is IconResource.Drawable -> {
+                Icon(
+                    painter = painterResource(id = iconRes.id),
+                    contentDescription = stringResource(destination.titleResId),
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = stringResource(destination.titleResId),
